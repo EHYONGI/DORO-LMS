@@ -37,6 +37,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'community.apps.CommunityConfig',
 ]
 
 MIDDLEWARE = [
@@ -75,8 +76,12 @@ WSGI_APPLICATION = 'doro.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'doro_lms',                      # 생성한 DB 이름
+        'USER': 'postgres',                          # 생성한 DB 사용자
+        'PASSWORD': '1234',                  # 사용자의 비밀번호
+        'HOST': 'localhost',                       # DB 서버 주소 (Docker 사용 시 컨테이너 이름 또는 IP)
+        'PORT': '5432',                            # PostgreSQL 기본 포트 (변경하지 않았다면 5432)
     }
 }
 
@@ -103,9 +108,9 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/3.1/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'ko-kr'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Asia/Seoul'
 
 USE_I18N = True
 
@@ -118,3 +123,6 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/3.1/howto/static-files/
 
 STATIC_URL = '/static/'
+
+COMMUNITY_MODEL = 'community.Thread'
+COMMUNITY_MODEL = 'community.Comment'
