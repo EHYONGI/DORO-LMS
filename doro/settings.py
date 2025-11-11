@@ -37,6 +37,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'user.apps.UserConfig',
     'community.apps.CommunityConfig',
 ]
 
@@ -76,12 +77,9 @@ WSGI_APPLICATION = 'doro.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'doro_lms',                      # 생성한 DB 이름
-        'USER': 'postgres',                          # 생성한 DB 사용자
-        'PASSWORD': '1234',                  # 사용자의 비밀번호
-        'HOST': 'localhost',                       # DB 서버 주소 (Docker 사용 시 컨테이너 이름 또는 IP)
-        'PORT': '5432',                            # PostgreSQL 기본 포트 (변경하지 않았다면 5432)
+        'ENGINE': 'django.db.backends.sqlite3',
+        # 데이터베이스 파일 경로를 지정합니다.
+        'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
 
@@ -126,3 +124,5 @@ STATIC_URL = '/static/'
 
 COMMUNITY_MODEL = 'community.Thread'
 COMMUNITY_MODEL = 'community.Comment'
+
+AUTH_USER_MODEL = 'user.User'
