@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'user.apps.UserConfig',
     'community.apps.CommunityConfig',
+    'lecture.apps.LectureConfig',
 ]
 
 MIDDLEWARE = [
@@ -126,3 +127,8 @@ COMMUNITY_MODEL = 'community.Thread'
 COMMUNITY_MODEL = 'community.Comment'
 
 AUTH_USER_MODEL = 'user.User'
+
+LECTURE_MODEL = 'lecture.Lecture'
+LECTURE_MODEL = 'lecture.LectureApplication'
+LECTURE_MODEL = 'lecture.LectureSchedule'
+LECTURE_MODEL = 'lecture.LectureNotice'
