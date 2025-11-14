@@ -34,14 +34,14 @@ class LectureSchedule(models.Model):
     def __str__(self):
         return f"{self.lecture.name} ({self.start_date})"
 
-class LectureNotice(models.Model):
-    lecture = models.ForeignKey(
-        Lecture,
-        on_delete=models.CASCADE,
-        related_name="notices"
-    )
-    title = models.CharField(max_length=255)
-    body = models.TextField()
+# class LectureNotice(models.Model):
+#     lecture = models.ForeignKey(
+#         Lecture,
+#         on_delete=models.CASCADE,
+#         related_name="notices"
+#     )
+#     title = models.CharField(max_length=255)
+#     body = models.TextField()
 
-    def __str__(self):
-        return f"{self.lecture.name} - {self.title}"
+#     def __str__(self):
+#         return f"{self.lecture.name} - {self.title}"

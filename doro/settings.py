@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'user.apps.UserConfig',
     'community.apps.CommunityConfig',
     'lecture.apps.LectureConfig',
+    'notice.apps.NoticeConfig',
 ]
 
 MIDDLEWARE = [
@@ -123,12 +124,14 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 
-COMMUNITY_MODEL = 'community.Thread'
-COMMUNITY_MODEL = 'community.Comment'
+COMMUNITY_THREAD_MODEL = 'community.Thread'
+COMMUNITY_COMMENT_MODEL = 'community.Comment'
 
 AUTH_USER_MODEL = 'user.User'
 
 LECTURE_MODEL = 'lecture.Lecture'
-LECTURE_MODEL = 'lecture.LectureApplication'
-LECTURE_MODEL = 'lecture.LectureSchedule'
-LECTURE_MODEL = 'lecture.LectureNotice'
+LECTURE_APP_MODEL = 'lecture.LectureApplication'
+LECTURE_SCHEDULE_MODEL = 'lecture.LectureSchedule'
+
+LECTURE_NOTICE_MODEL = 'notice.LectureNotice'
+SYSTEM_NOTICE_MODEL = 'notice.SystemNotice'
