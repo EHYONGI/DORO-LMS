@@ -40,7 +40,7 @@ class LectureSchedule(models.Model):
     lecture = models.ForeignKey(
         Lecture,
         on_delete=models.CASCADE,
-        related_name="lecture_schedules"
+        related_name="schedules"
     )
     start_date = models.DateField()
 
@@ -72,17 +72,8 @@ class Attendance(models.Model):
 class Registration(models.Model):
     lecture = models.ForeignKey(Lecture, on_delete=models.CASCADE, related_name="registrations")
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="registrations")
+    registered_at = models.DateTimeField(auto_now_add=True)
 
 class Enrollment(models.Model):
     lecture = models.ForeignKey(Lecture, on_delete=models.CASCADE, related_name="enrollments")
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="enrollments")
-
-class Schedule(models.Model):
-    lecture = models.ForeignKey(Lecture, on_delete=models.CASCADE, related_name="schedules")
-    start_date = models.DateField()
-
-class Retustration(models.Model):
-    schedule = models.ForeignKey(Schedule, on_delete=models.CASCADE, related_name="retustrations")
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="retustrations")
-    instructor = models.ForeignKey(User, on_delete=models.CASCADE, related_name='retustration_instructor')
-    registered = models.DateField()
