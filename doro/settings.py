@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'community.apps.CommunityConfig',
     'lecture.apps.LectureConfig',
     'notice.apps.NoticeConfig',
+    'consultations.apps.ConsultationsConfig',
 ]
 
 MIDDLEWARE = [
@@ -132,6 +133,12 @@ AUTH_USER_MODEL = 'user.User'
 LECTURE_MODEL = 'lecture.Lecture'
 LECTURE_APP_MODEL = 'lecture.LectureApplication'
 LECTURE_SCHEDULE_MODEL = 'lecture.LectureSchedule'
+LECTURE_NOTICE_MODEL = 'lecture.LectureNotice'
+LECTURE_WISHLIST_MODEL = 'lecture.Wishlist'
+LECTURE_ATTENDANCE_MODEL = 'lecture.Attendance'
+LECTURE_REGISTRATION_MODEL = 'lecture.Registration'
+LECTURE_ENROLLMENT_MODEL = 'lecture.Enrollment'
 
-LECTURE_NOTICE_MODEL = 'notice.LectureNotice'
+CONSULTATION_MODEL = 'consultation.Consultation'
+
 SYSTEM_NOTICE_MODEL = 'notice.SystemNotice'
