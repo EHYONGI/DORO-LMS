@@ -1,12 +1,14 @@
 /* 리셋 */
 * { box-sizing: border-box; }
 html, body { margin:0; }
-body { font-family: "Noto Sans KR", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
+body {
+  font-family: "Noto Sans KR", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+}
 
 /* 상단바 */
 .navbar{
   height:56px;
-  background:#2e86b7;               /* 시안처럼 밝은 파란색 */
+  background:#4A90B8;               /* 요청하신 파란색 */
   color:#fff;
   display:flex;
   align-items:center;
@@ -38,6 +40,10 @@ body { font-family: "Noto Sans KR", system-ui, -apple-system, Segoe UI, Roboto, 
   padding:8px 10px;
   border-radius:6px;
   cursor:pointer;
+  /* ⬇⬇ 추가된 부분 (a 태그용) */
+  text-decoration:none;
+  display:flex;
+  align-items:center;
 }
 .nav-btn:hover,
 .nav-btn:focus{
@@ -67,4 +73,191 @@ body { font-family: "Noto Sans KR", system-ui, -apple-system, Segoe UI, Roboto, 
   .brand img{ height:24px; }
   .nav-center{ gap:16px; }
   .nav-btn{ font-size:14px; padding:6px 8px; }
+}
+
+/* ===== 상담페이지 공통 레이아웃 ===== */
+.counsel-page {
+  background:#f1f3f6;
+  min-height:calc(100vh - 56px); /* 헤더 높이만큼 뺀 높이 */
+  padding:20px 0;
+}
+
+.counsel-container {
+  max-width:1100px;
+  margin:0 auto;
+  background:#ffffff;
+  padding:18px 24px 28px;
+  border-radius:8px;
+  box-shadow:0 2px 8px rgba(0,0,0,0.08);
+}
+
+.counsel-title {
+  font-size:20px;
+  font-weight:700;
+  margin:0 0 10px;
+}
+
+/* 상단 탭 (나의 상담내역 / 상담신청) */
+.counsel-tabs {
+  display:flex;
+  gap:2px;
+  margin-top:6px;
+  border-bottom:2px solid #d0d7de;
+}
+
+.counsel-tab {
+  padding:8px 22px;
+  font-size:14px;
+  border:1px solid #d0d7de;
+  border-bottom:none;
+  border-radius:6px 6px 0 0;
+  background:#f5f7fb;
+  cursor:pointer;
+}
+
+.counsel-tab.active {
+  background:#ffffff;
+  border-bottom:2px solid #ffffff;
+  font-weight:700;
+  color:#4A90B8;
+}
+
+/* 셀렉트/인풋 공통 */
+.c-select,
+.c-input,
+.c-textarea {
+  border:1px solid #cfd5e2;
+  border-radius:3px;
+  padding:5px 8px;
+  font-size:13px;
+  width:100%;
+  box-sizing:border-box;
+}
+
+.c-textarea {
+  resize:vertical;
+}
+
+/* 기본 버튼 */
+.btn {
+  padding:6px 12px;
+  font-size:13px;
+  border-radius:3px;
+  border:1px solid #4A90B8;
+  background:#4A90B8;
+  color:#ffffff;
+  cursor:pointer;
+}
+.btn:hover { filter:brightness(0.95); }
+
+/* 라인 버튼 */
+.btn-outline {
+  background:#ffffff;
+  color:#4A90B8;
+}
+
+/* 회색 버튼 */
+.btn-gray {
+  background:#b3b3b3;
+  border-color:#a0a0a0;
+}
+
+/* 오른쪽 정렬 버튼 */
+.align-right {
+  margin-left:auto;
+}
+
+/* ====== (1) 나의 상담내역 화면 ====== */
+.counsel-filters {
+  display:flex;
+  gap:10px;
+  margin:16px 0 12px;
+  align-items:center;
+}
+
+.counsel-filters select {
+  width:140px;
+}
+
+.counsel-table-wrap {
+  border:1px solid #cfd5e2;
+  border-radius:4px;
+  overflow:hidden;
+}
+
+.counsel-table {
+  width:100%;
+  border-collapse:collapse;
+  font-size:13px;
+}
+
+.counsel-table thead {
+  background:#f2f5fb;
+}
+
+.counsel-table th,
+.counsel-table td {
+  padding:7px 8px;
+  border-top:1px solid #e0e4ef;
+  text-align:center;
+}
+
+/* ====== (2) 상담신청 폼 화면 ====== */
+.counsel-form {
+  border:1px solid #cfd5e2;
+  border-radius:4px;
+  margin-top:16px;
+  overflow:hidden;
+}
+
+.counsel-form-row {
+  display:grid;
+  grid-template-columns:150px 1fr;
+  border-top:1px solid #cfd5e2;
+  font-size:13px;
+}
+
+.counsel-form-row:first-child {
+  border-top:none;
+}
+
+.counsel-form-label {
+  padding:10px 10px;
+  background:#f7f8fb;
+  border-right:1px solid #cfd5e2;
+  font-weight:600;
+}
+
+.counsel-form-body {
+  padding:8px 10px;
+}
+
+.counsel-help {
+  margin-top:4px;
+  font-size:12px;
+  color:#666;
+}
+
+.required {
+  color:#e53935;
+  margin-right:4px;
+}
+
+.counsel-radio-group {
+  display:flex;
+  align-items:center;
+  gap:12px;
+}
+
+.counsel-datetime {
+  display:flex;
+  gap:6px;
+  flex-wrap:wrap;
+}
+
+.counsel-actions {
+  margin-top:14px;
+  display:flex;
+  justify-content:center;
+  gap:10px;
 }
