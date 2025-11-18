@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DORO - 신청내역 확인</title>
+
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { font-family:'Noto Sans KR', sans-serif; background:#f5f5f5; }
+
+    .navbar{
+      background:#4A90B8; height:60px; padding:0 40px;
+      display:flex; align-items:center; justify-content:space-between;
+      color:white;
+    }
+    .brand img{ height:35px; }
+    .nav-center{ display:flex; gap:10px; }
+    .nav-btn{
+      background:transparent; border:0; color:white;
+      padding:8px 20px; font-size:16px; cursor:pointer;
+    }
+    .nav-btn.is-active{ background:rgba(255,255,255,0.25); border-radius:4px; font-weight:600; }
+    .link-btn{ background:transparent; border:0; color:white; cursor:pointer; text-decoration:underline; }
+
+    .page{ max-width:1400px; margin:40px auto; padding:0 20px; }
+    .container-box{
+      background:white; border-radius:8px;
+      box-shadow:0 2px 8px rgba(0,0,0,0.07);
+    }
+
+    .tabs{ display:flex; border-bottom:2px solid #e0e0e0; }
+    .tab-btn{
+      flex:1; max-width:250px; border:0; background:#f8f8f8;
+      padding:18px 30px; font-size:16px; cursor:pointer; color:#666;
+      border-radius:8px 8px 0 0;
+    }
+    .tab-btn.active{ background:#4A90B8; color:white; font-weight:600; }
+
+    .main-grid{
+      display:grid; grid-template-columns:1fr 300px;
+      gap:25px; padding:30px;
+    }
+
+    .info-box{
+      background:#fafafa; border:1px solid #ddd;
+      padding:15px 20px; border-radius:6px; margin-bottom:20px;
+    }
+    .info-title{ font-weight:700; margin-bottom:10px; }
+
+    .table-wrap{
+      overflow-x:auto; border:1px solid #ddd; border-radius:5px;
+    }
+    table{ width:100%; border-collapse:collapse; text-align:center; font-size:14px; }
+    thead{ background:#f1f1f1; }
+    th{ padding:12px; border-bottom:2px solid #ccc; }
+    td{ padding:12px; border-top:1px solid #eee; }
+
+    .btn-check{
+      background:#4A90B8; color:white; border:0;
+      padding:6px 14px; border-radius:4px; cursor:pointer;
+    }
+
+    /* side */
+    .side-box{text-align:center; }
+    .side-img{ width:140px; margin-bottom:20px; }
+    .chart-box{
+      border:1px solid #ddd; padding:20px; background:#fafafa; border-radius:6px;
+    }
+    .chart-box img{ width:150px; display:block; margin:auto; }
+    .btn-pdf{
+      margin-top:15px; border:0; background:#4A90B8;
+      color:white; padding:10px 20px; border-radius:4px; cursor:pointer;
+    }
+
+  </style>
+</head>
+<body>
+
+  <header class="navbar">
+    <div class="brand"><img src="logo.png"></div>
+
+    <nav class="nav-center">
+      <button class="nav-btn is-active">수강신청</button>
+      <button class="nav-btn">대시보드</button>
+      <button class="nav-btn">상담페이지</button>
+      <button class="nav-btn">마이페이지</button>
+    </nav>
+
+    <button class="link-btn">로그아웃</button>
+  </header>
+
+  <div class="page">
+    <div class="container-box">
+
+      <div class="tabs">
+        <button class="tab-btn">강의 추천</button>
+        <button class="tab-btn">희망과목</button>
+        <button class="tab-btn">수강신청</button>
+        <button class="tab-btn active">신청내역 확인</button>
+      </div>
+
+      <div class="main-grid">
+
+        <!-- LEFT -->
+        <div>
+
+          <div class="info-box">
+            <div class="info-title">내 정보</div>
+            <div>이름 : OOO</div>
+            <div>학년 : OOO</div>
+            <div>유형 : OOO</div>
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>번호</th>
+                  <th>과목명</th>
+                  <th>강사명</th>
+                  <th>강의유형</th>
+                  <th>신청여부</th>
+                  <th>신청완료</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                <tr>
+                  <td>1</td><td>과목 A</td><td>김OO</td><td>대면</td><td>O</td>
+                  <td><button class="btn-check">완료</button></td>
+                </tr>
+
+                <tr>
+                  <td>2</td><td>과목 B</td><td>박OO</td><td>온라인</td><td>X</td>
+                  <td><button class="btn-check">완료</button></td>
+                </tr>
+
+              </tbody>
+            </table>
+          </div>
+
+        </div>
+
+        <!-- RIGHT -->
+        <div class="side-box">
+          <img class="side-img" src="side.png">
+          <button class="btn-pdf">PDF 파일 다운로드</button>
+
+          <div class="chart-box">
+            <img src="chart.png">
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+</body>
+</html>
