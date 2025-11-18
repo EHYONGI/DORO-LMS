@@ -1,0 +1,454 @@
+/* 리셋 */
+* { box-sizing: border-box; }
+html, body { margin:0; }
+body {
+  font-family: "Noto Sans KR", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+}
+
+/* 상단바 */
+.navbar{
+  height:56px;
+  background:#4A90B8;               /* 요청하신 파란색 */
+  color:#fff;
+  display:flex;
+  align-items:center;
+  padding:0 16px;
+  gap:12px;
+  box-shadow: inset 0 -1px rgba(0,0,0,0.2);
+}
+
+/* 영역 배치 */
+.nav-left{ flex:0 0 auto; display:flex; align-items:center; }
+.nav-center{ flex:1 1 auto; display:flex; justify-content:center; gap:48px; }
+.nav-right{ flex:0 0 auto; }
+
+/* 로고 */
+.brand img{
+  display:block;
+  height:28px;      /* 필요하면 24~32px로 조절 */
+  width:auto;
+}
+
+/* 가운데 메뉴 버튼(텍스트 느낌) */
+.nav-btn{
+  appearance:none;
+  background:transparent;
+  border:0;
+  color:#ffffff;
+  font-weight:700;
+  font-size:15px;
+  padding:8px 10px;
+  border-radius:6px;
+  cursor:pointer;
+  /* ⬇⬇ 추가된 부분 (a 태그용) */
+  text-decoration:none;
+  display:flex;
+  align-items:center;
+}
+.nav-btn:hover,
+.nav-btn:focus{
+  background: rgba(255,255,255,0.14);
+  outline: none;
+}
+.nav-btn.is-active{
+  /* 현재 페이지 표시(선택사항) */
+  box-shadow: inset 0 -2px 0 0 #ffffff;
+}
+
+/* 오른쪽 링크 스타일 */
+.link-btn{
+  appearance:none;
+  background:transparent;
+  border:0;
+  color:#eaf2ff;
+  font-size:14px;
+  padding:8px 6px;
+  cursor:pointer;
+}
+.link-btn:hover{ color:#ffffff; text-decoration:underline; }
+
+/* 반응형(모바일) */
+@media (max-width: 768px){
+  .navbar{ height:52px; }
+  .brand img{ height:24px; }
+  .nav-center{ gap:16px; }
+  .nav-btn{ font-size:14px; padding:6px 8px; }
+}
+
+/* ===== 상담페이지 공통 레이아웃 ===== */
+.counsel-page {
+  background:#f1f3f6;
+  min-height:calc(100vh - 56px); /* 헤더 높이만큼 뺀 높이 */
+  padding:20px 0;
+}
+
+.counsel-container {
+  max-width:1100px;
+  margin:0 auto;
+  background:#ffffff;
+  padding:18px 24px 28px;
+  border-radius:8px;
+  box-shadow:0 2px 8px rgba(0,0,0,0.08);
+}
+
+.counsel-title {
+  font-size:20px;
+  font-weight:700;
+  margin:0 0 10px;
+}
+
+/* 상단 탭 (나의 상담내역 / 상담신청) */
+.counsel-tabs {
+  display:flex;
+  gap:2px;
+  margin-top:6px;
+  border-bottom:2px solid #d0d7de;
+}
+
+.counsel-tab {
+  padding:8px 22px;
+  font-size:14px;
+  border:1px solid #d0d7de;
+  border-bottom:none;
+  border-radius:6px 6px 0 0;
+  background:#f5f7fb;
+  cursor:pointer;
+}
+
+.counsel-tab.active {
+  background:#ffffff;
+  border-bottom:2px solid #ffffff;
+  font-weight:700;
+  color:#4A90B8;
+}
+
+/* 셀렉트/인풋 공통 */
+.c-select,
+.c-input,
+.c-textarea {
+  border:1px solid #cfd5e2;
+  border-radius:3px;
+  padding:5px 8px;
+  font-size:13px;
+  width:100%;
+  box-sizing:border-box;
+}
+
+.c-textarea {
+  resize:vertical;
+}
+
+/* 기본 버튼 */
+.btn {
+  padding:6px 12px;
+  font-size:13px;
+  border-radius:3px;
+  border:1px solid #4A90B8;
+  background:#4A90B8;
+  color:#ffffff;
+  cursor:pointer;
+}
+.btn:hover { filter:brightness(0.95); }
+
+/* 라인 버튼 */
+.btn-outline {
+  background:#ffffff;
+  color:#4A90B8;
+}
+
+/* 회색 버튼 */
+.btn-gray {
+  background:#b3b3b3;
+  border-color:#a0a0a0;
+}
+
+/* 오른쪽 정렬 버튼 */
+.align-right {
+  margin-left:auto;
+}
+
+/* ====== (1) 나의 상담내역 화면 ====== */
+.counsel-filters {
+  display:flex;
+  gap:10px;
+  margin:16px 0 12px;
+  align-items:center;
+}
+
+.counsel-filters select {
+  width:140px;
+}
+
+.counsel-table-wrap {
+  border:1px solid #cfd5e2;
+  border-radius:4px;
+  overflow:hidden;
+}
+
+.counsel-table {
+  width:100%;
+  border-collapse:collapse;
+  font-size:13px;
+}
+
+.counsel-table thead {
+  background:#f2f5fb;
+}
+
+.counsel-table th,
+.counsel-table td {
+  padding:7px 8px;
+  border-top:1px solid #e0e4ef;
+  text-align:center;
+}
+
+/* ====== (2) 상담신청 폼 화면 ====== */
+.counsel-form {
+  border:1px solid #cfd5e2;
+  border-radius:4px;
+  margin-top:16px;
+  overflow:hidden;
+}
+
+.counsel-form-row {
+  display:grid;
+  grid-template-columns:150px 1fr;
+  border-top:1px solid #cfd5e2;
+  font-size:13px;
+}
+
+.counsel-form-row:first-child {
+  border-top:none;
+}
+
+.counsel-form-label {
+  padding:10px 10px;
+  background:#f7f8fb;
+  border-right:1px solid #cfd5e2;
+  font-weight:600;
+}
+
+.counsel-form-body {
+  padding:8px 10px;
+}
+
+.counsel-help {
+  margin-top:4px;
+  font-size:12px;
+  color:#666;
+}
+
+.required {
+  color:#e53935;
+  margin-right:4px;
+}
+
+.counsel-radio-group {
+  display:flex;
+  align-items:center;
+  gap:12px;
+}
+
+.counsel-datetime {
+  display:flex;
+  gap:6px;
+  flex-wrap:wrap;
+}
+
+.counsel-actions {
+  margin-top:14px;
+  display:flex;
+  justify-content:center;
+  gap:10px;
+}
+/* 대시보드 레이아웃 */
+.dashboard-layout {
+  display: grid;
+  grid-template-columns: 2fr 1.2fr;
+  gap: 32px;
+  padding: 40px 60px;
+}
+
+/* 과목 리스트 */
+.course-list h2 {
+  margin-bottom: 20px;
+}
+
+.course-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 18px;
+  border-radius: 10px;
+  border: 1px solid #ddd;
+  background-color: #fff;
+  margin-bottom: 14px;
+  text-decoration: none;
+  color: inherit;
+}
+
+.course-card:hover {
+  box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+}
+
+.course-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background-color: #eee;
+}
+
+.course-info {
+  flex: 1;
+}
+
+.course-name {
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.prof-name {
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.course-more {
+  font-size: 20px;
+  color: #999;
+}
+
+/* 오른쪽 중요 공지 */
+.important-notice h2 {
+  margin-bottom: 20px;
+}
+
+.notice-card {
+  padding: 18px 16px;
+  background-color: #fff;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.notice-date {
+  margin-top: 10px;
+  font-size: 0.8rem;
+  color: #888;
+  text-align: right;
+}
+
+.more-btn {
+  margin-top: 10px;
+  background: none;
+  border: none;
+  color: #555;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+.course-dashboard-layout {
+  padding: 40px 60px;
+}
+
+/* 상단 탭 */
+.course-tabs {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 24px;
+}
+
+.tab-btn {
+  padding: 8px 20px;
+  border: 1px solid #ddd;
+  background-color: #f8f8f8;
+  cursor: pointer;
+}
+
+.tab-btn.is-active {
+  background-color: #0f79bf; /* 네이비/파랑 느낌 색으로 바꿔도 됨 */
+  color: #fff;
+  border-color: #0f79bf;
+}
+
+/* 레이아웃: 좌측 사이드 + 우측 내용 */
+.course-dashboard-layout {
+  display: grid;
+  grid-template-columns: 1fr 3fr;
+  gap: 32px;
+}
+
+/* 사이드바 */
+.course-side h2 {
+  margin-bottom: 10px;
+}
+
+.course-side ul {
+  list-style: none;
+  padding-left: 0;
+}
+
+.side-link {
+  display: block;
+  margin-bottom: 8px;
+  text-decoration: none;
+  color: #333;
+}
+
+.side-link.is-active {
+  font-weight: 600;
+}
+
+/* 우측 메인 컨텐츠 */
+.course-main {
+  border-top: 1px solid #ddd;
+  padding-top: 16px;
+}
+
+.course-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.submit-btn {
+  padding: 6px 14px;
+  border: 1px solid #333;
+  background-color: #fff;
+  cursor: pointer;
+}
+
+.assignment-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  color: #555;
+  margin-bottom: 16px;
+}
+
+.assignment-box {
+  border: 1px solid #ddd;
+  background-color: #fff;
+  height: 260px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: #777;
+  margin-bottom: 20px;
+}
+
+.file-upload-box {
+  border: 1px solid #ddd;
+  background-color: #fafafa;
+  text-align: center;
+  padding: 16px 10px;
+}
+
+.file-btn {
+  margin-top: 10px;
+  padding: 8px 18px;
+  border-radius: 20px;
+  border: 1px solid #aaa;
+  background-color: #fff;
+  cursor: pointer;
+}
