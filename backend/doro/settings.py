@@ -145,3 +145,24 @@ LECTURE_ENROLLMENT_MODEL = 'lecture.Enrollment'
 CONSULTATION_MODEL = 'consultation.Consultation'
 
 SYSTEM_NOTICE_MODEL = 'notice.SystemNotice'
+
+
+# settings.py 맨 아래에 추가
+
+# DRF가 JWT를 인증 수단으로 사용하도록 설정
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    )
+}
+
+from datetime import timedelta
+
+# JWT 설정 (토큰 유효기간 등)
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60), # 1시간 동안 유효
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),    # 1일 동안 유효
+}
+
+
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'

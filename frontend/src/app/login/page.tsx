@@ -30,9 +30,14 @@ export default function LoginPage() {
             const data = await res.json();
 
             if (res.ok) {
-                setMessage(`성공! 서버 응답: ${data.message}`);
-                // 로그인 성공 시 메인 페이지로 이동하려면 아래 주석 해제
-                // router.push('/'); 
+                // 1. 정보 저장
+                localStorage.setItem('user', JSON.stringify(data.user));
+
+                localStorage.setItem('access_token', data.token.access);
+                localStorage.setItem('refresh_token', data.token.refresh);
+
+                alert(`환영합니다, ${data.user.username}님!`);
+                router.push('/dashboard');
             } else {
                 setMessage(`실패: ${data.error || '로그인 정보를 확인하세요.'}`);
             }
