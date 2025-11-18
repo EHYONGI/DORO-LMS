@@ -139,7 +139,7 @@ LECTURE_SCHEDULE_MODEL = 'lecture.LectureSchedule'
 LECTURE_NOTICE_MODEL = 'lecture.LectureNotice'
 LECTURE_WISHLIST_MODEL = 'lecture.Wishlist'
 LECTURE_ATTENDANCE_MODEL = 'lecture.Attendance'
-LECTURE_REGISTRATION_MODEL = 'lecture.Registration'
+LECTURE_ASSIGNMENT_MODEL = 'lecture.Assignment'
 LECTURE_ENROLLMENT_MODEL = 'lecture.Enrollment'
 
 CONSULTATION_MODEL = 'consultation.Consultation'
@@ -166,3 +166,4 @@ SIMPLE_JWT = {
 
 
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

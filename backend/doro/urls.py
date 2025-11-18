@@ -1,26 +1,38 @@
-"""doro URL Configuration
-
-The `urlpatterns` list routes URLs to views. For more information please see:
-    https://docs.djangoproject.com/en/3.1/topics/http/urls/
-Examples:
-Function views
-    1. Add an import:  from my_app import views
-    2. Add a URL to urlpatterns:  path('', views.home, name='home')
-Class-based views
-    1. Add an import:  from other_app.views import Home
-    2. Add a URL to urlpatterns:  path('', Home.as_view(), name='home')
-Including another URLconf
-    1. Import the include() function: from django.urls import include, path
-    2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
-"""
 from django.contrib import admin
-from django.urls import path, include
+from django.urls import path
+# 각 앱의 view 함수들을 직접 import
+from lecture import views as lecture_views
+from notice import views as notice_views
+from community import views as community_views
+from user import views as user_views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('api/community/', include('community.urls')),
-    path('api/user/', include('user.urls')),
-    path('api/lecture/', include('lecture.urls')),
-    path('api/notice/', include('notice.urls')),
-    path('api/consultations/', include('consultations.urls')),
+
+    # === 1. 대시보드 (Dashboard) API ===
+    # 내 수강 목록
+    path('api/dashboard/my-courses/', lecture_views.my_course_list_api),
+    # 공지 목록 (통합: 시스템 공지 + 내 강의 공지)
+    path('api/dashboard/notices/', notice_views.dashboard_notice_list_api),
+    # 공지 상세
+    path('api/dashboard/notices/<int:pk>/', notice_views.notice_detail_api),
+    # 강의별 과제 현황
+    path('api/dashboard/tasks/', lecture_views.my_task_list_api),
+
+    # === 2. 커뮤니티 (Community) API ===
+    # 글 목록 조회 및 작성 (GET, POST)
+    path('api/community/', community_views.community_list_create_api),
+    # 글 상세 조회 (:id -> <int:pk>)
+    path('api/community/<int:pk>/', community_views.community_detail_api),
+
+    # === 3. 강의 내부 기능 (Lecture Specific) ===
+    path('api/lecture/<int:lecture_id>/notices/', lecture_views.course_notice_list_api),
+    path('api/lecture/notices/<int:pk>/', lecture_views.lecture_notice_detail_api),
+    path('api/lecture/<int:lecture_id>/assignments/', lecture_views.course_assignment_list_api),
+    path('api/lecture/<int:lecture_id>/attendance/', lecture_views.my_attendance_api),
+    # === 4. 유저 (User) API ===
+    path('api/user/signup/', user_views.signup_api),
+    path('api/user/login/', user_views.login_api),
+    path('api/user/logout/', user_views.logout_api),
+    path('api/user/me/', user_views.user_profile_api),
 ]
