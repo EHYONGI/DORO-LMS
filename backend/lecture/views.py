@@ -77,3 +77,32 @@ def course_assignment_list_api(request, lecture_id):
     tasks = Assignment.objects.filter(lecture_id=lecture_id).order_by('deadline')
     serializer = AssignmentSerializer(tasks, many=True)
     return Response(serializer.data)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def my_activity_api(request):
+    """내 활동 내역 (작성한 글, 댓글) 조회"""
+    user = request.user
+    
+    # 내가 쓴 글
+    my_threads = Thread.objects.filter(student=user).order_by('-created_at')
+    thread_serializer = ThreadSerializer(my_threads, many=True)
+    
+    # 내가 쓴 댓글 (댓글이 달린 글의 제목도 같이 주면 좋음)
+    my_comments = Comment.objects.filter(student=user).select_related('thread').order_by('-created_at')
+    # 댓글 시리얼라이저는 간단하게 새로 정의하거나 기존 것 활용
+    comment_data = []
+    for comment in my_comments:
+        comment_data.append({
+            'id': comment.id,
+            'content': comment.content,
+            'created_at': comment.created_at,
+            'thread_id': comment.thread.id,
+            'thread_title': comment.thread.title
+        })
+
+    return Response({
+        'threads': thread_serializer.data,
+        'comments': comment_data
+    })

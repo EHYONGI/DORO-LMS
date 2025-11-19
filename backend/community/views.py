@@ -17,8 +17,7 @@ def community_list_create_api(request):
             # 특정 강의 게시판 조회
             threads = Thread.objects.filter(lecture_id=lecture_id).order_by('-created_at')
         else:
-            # 전체 게시판 (강의가 지정되지 않은 글 + 강의 글 모두 볼지, 아니면 구분할지 정책에 따라 다름)
-            # 여기서는 '전체' 탭이므로 모든 글을 보여줍니다.
+            # 전체 게시판
             threads = Thread.objects.all().order_by('-created_at')
             
         serializer = ThreadSerializer(threads, many=True)
@@ -52,3 +51,32 @@ def comment_create_api(request, pk):
         serializer.save(student=request.user, thread=thread)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+# 4. [추가됨] 내 활동 내역 (내가 쓴 글, 댓글) 조회
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def my_activity_api(request):
+    """내 활동 내역 (작성한 글, 댓글) 조회"""
+    user = request.user
+    
+    # 내가 쓴 글
+    my_threads = Thread.objects.filter(student=user).order_by('-created_at')
+    thread_serializer = ThreadSerializer(my_threads, many=True)
+    
+    # 내가 쓴 댓글 (댓글이 달린 글의 제목도 같이 전달)
+    my_comments = Comment.objects.filter(student=user).select_related('thread').order_by('-created_at')
+    
+    comment_data = []
+    for comment in my_comments:
+        comment_data.append({
+            'id': comment.id,
+            'content': comment.content,
+            'created_at': comment.created_at,
+            'thread_id': comment.thread.id,
+            'thread_title': comment.thread.title
+        })
+
+    return Response({
+        'threads': thread_serializer.data,
+        'comments': comment_data
+    })

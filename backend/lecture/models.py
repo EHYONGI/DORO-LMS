@@ -6,12 +6,13 @@ from user.models import User
 class Lecture(models.Model):
     # 상태 관리를 위한 Choice 필드 (대시보드 필터링 용이)
     STATUS_CHOICES = (
-        ('RECRUITING', '강사 모집 중'),  # 관리자가 생성, 강사 미정
-        ('OPEN', '수강 신청 중'),        # 강사 확정, 학생 모집 시작
-        ('CLOSED', '마감'),             # 강의 종료 또는 인원 마감
+        ('RECRUITING', '선생님 배정 중'), # 또는 강사 모집 중
+        ('OPEN', '수강 신청 중'),
+        ('IN_PROGRESS', '수업 진행 중'), # [추가됨]
+        ('CLOSED', '마감'),           # 수업 종료
     )
 
-    name = models.CharField(max_length=255)
+    name = models.CharField(max_length=255, verbose_name="수업명")
     description = models.TextField(blank=True, null=True) # 강의 설명
     
     # 핵심 변경: 강사가 정해지지 않은 상태로 생성되어야 하므로 null=True 허용

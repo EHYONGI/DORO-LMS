@@ -26,7 +26,8 @@ class UserSignupSerializer(serializers.ModelSerializer):
 class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'birth', 'date_joined', 'role']
+        # interests 필드 추가
+        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'birth', 'phone', 'date_joined', 'role', 'interests']
         read_only_fields = ['id', 'username', 'date_joined', 'role']
 
 # 3. 비밀번호 찾기 (유지)
