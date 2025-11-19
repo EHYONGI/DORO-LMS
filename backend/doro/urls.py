@@ -1,5 +1,5 @@
 from django.contrib import admin
-from django.urls import path
+from django.urls import path, include
 # 각 앱의 view 함수들을 직접 import
 from lecture import views as lecture_views
 from notice import views as notice_views
@@ -35,4 +35,5 @@ urlpatterns = [
     path('api/user/login/', user_views.login_api),
     path('api/user/logout/', user_views.logout_api),
     path('api/user/me/', user_views.user_profile_api),
+    path('api/consultations/', include('consultations.urls')), # include 사용하거나 직접 연결
 ]
