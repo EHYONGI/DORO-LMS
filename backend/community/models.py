@@ -1,9 +1,8 @@
 from django.db import models
 from user.models import User
+from lecture.models import Lecture # Lecture 모델 import
 
-# Create your models here.
 class Thread(models.Model):
-    ## primary key (id)는 자동으로 만들어지기 때문에 따로 설정 안함
     title = models.CharField(max_length=200)
     content = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
@@ -11,11 +10,21 @@ class Thread(models.Model):
         User,
         null=True,
         on_delete=models.CASCADE,
-        related_name="thread"
+        related_name="threads"
     )
+    # 어떤 강의의 게시판인지 구분 (Null이면 전체 게시판)
+    lecture = models.ForeignKey(
+        Lecture,
+        null=True,
+        blank=True,
+        on_delete=models.CASCADE,
+        related_name="threads"
+    )
+
     def __str__(self):
         return self.title
 
+# Comment 모델은 그대로 유지
 class Comment(models.Model):
     content = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
@@ -23,10 +32,10 @@ class Comment(models.Model):
         User,
         null=True,
         on_delete=models.CASCADE,
-        related_name="comment"
+        related_name="my_comments"
     )
     thread = models.ForeignKey(
         'Thread',
         on_delete=models.CASCADE,
-        related_name="comment"
-    ),
+        related_name="comments"
+    )

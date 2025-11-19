@@ -24,7 +24,7 @@ urlpatterns = [
     path('api/community/', community_views.community_list_create_api),
     # 글 상세 조회 (:id -> <int:pk>)
     path('api/community/<int:pk>/', community_views.community_detail_api),
-
+    path('api/community/<int:pk>/comments/', community_views.comment_create_api),
     # === 3. 강의 내부 기능 (Lecture Specific) ===
     path('api/lecture/<int:lecture_id>/notices/', lecture_views.course_notice_list_api),
     path('api/lecture/notices/<int:pk>/', lecture_views.lecture_notice_detail_api),
