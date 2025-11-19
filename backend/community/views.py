@@ -17,7 +17,8 @@ def community_list_create_api(request):
             # 특정 강의 게시판 조회
             threads = Thread.objects.filter(lecture_id=lecture_id).order_by('-created_at')
         else:
-            # 전체 게시판
+            # 전체 게시판 (강의가 지정되지 않은 글 + 강의 글 모두 볼지, 아니면 구분할지 정책에 따라 다름)
+            # 여기서는 '전체' 탭이므로 모든 글을 보여줍니다.
             threads = Thread.objects.all().order_by('-created_at')
             
         serializer = ThreadSerializer(threads, many=True)
@@ -68,13 +69,16 @@ def my_activity_api(request):
     
     comment_data = []
     for comment in my_comments:
-        comment_data.append({
-            'id': comment.id,
-            'content': comment.content,
-            'created_at': comment.created_at,
-            'thread_id': comment.thread.id,
-            'thread_title': comment.thread.title
-        })
+        # 댓글이 달린 게시글이 삭제되었을 경우를 대비해 try-except 처리를 하거나
+        # select_related로 가져왔으므로 thread가 존재한다고 가정합니다.
+        if comment.thread:
+            comment_data.append({
+                'id': comment.id,
+                'content': comment.content,
+                'created_at': comment.created_at,
+                'thread_id': comment.thread.id,
+                'thread_title': comment.thread.title
+            })
 
     return Response({
         'threads': thread_serializer.data,
