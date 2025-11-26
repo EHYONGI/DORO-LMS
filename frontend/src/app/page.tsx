@@ -1,139 +1,398 @@
-import Link from "next/link";
+// app/mypage/page.tsx
+'use client';
 
-export default function Home() {
-  return (
-    <main className="flex min-h-screen flex-col bg-white">
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
-      {/* === 메인 비주얼 영역 (Hero Section) === */}
-      <div className="relative w-full h-[600px] bg-gray-900 text-white overflow-hidden">
+// 데이터 타입 정의
+interface UserProfile {
+    username: string;
+    email: string;
+    first_name: string;
+    last_name: string;
+    phone: string;
+    birth: string;
+    interests: string;
+}
 
-        {/* 1. 배경 이미지 (Unsplash 무료 이미지 사용 - 로봇 관련) */}
-        <div
-          className="absolute inset-0 bg-cover bg-center"
-          style={{
-            backgroundImage: "url('https://images.unsplash.com/photo-1485827404703-89b55fcc595e?q=80&w=2070&auto=format&fit=crop')",
-          }}
-        >
-          {/* 검은색 오버레이 (글자 잘 보이게) */}
-          <div className="absolute inset-0 bg-black/50" />
-        </div>
+interface Lecture {
+    id: number;
+    name: string;
+    instructor_name: string;
+    status: 'RECRUITING' | 'OPEN' | 'IN_PROGRESS' | 'CLOSED';
+}
 
-        {/* 2. 콘텐츠 컨테이너 */}
-        <div className="relative z-10 max-w-7xl mx-auto h-full px-4 sm:px-6 lg:px-8 flex flex-col justify-center">
+interface Enrollment {
+    lecture: Lecture;
+    joined_at: string;
+}
 
-          {/* 우측 상단 버튼들 (이미지 참고) */}
-          <div className="absolute top-8 right-4 sm:right-8 flex gap-3">
-            <button className="border border-white/40 bg-white/10 backdrop-blur-sm rounded-full px-5 py-1.5 text-xs font-medium hover:bg-white/20 transition">
-              DORO 이달의 하이라이트
-            </button>
-            <button className="border border-white/40 bg-white/10 backdrop-blur-sm rounded-full px-5 py-1.5 text-xs font-medium hover:bg-white/20 transition">
-              교육 문의
-            </button>
-          </div>
+interface MyActivity {
+    threads: { id: number; title: string; created_at: string }[];
+    comments: { id: number; content: string; thread_title: string; created_at: string }[];
+}
 
-          {/* 중앙~하단 콘텐츠 그리드 */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-end pb-20 h-full">
+export default function MyPage() {
+    const router = useRouter();
+    const [activeTab, setActiveTab] = useState<'profile' | 'courses' | 'activity'>('profile');
 
-            {/* 좌측: 메인 텍스트 */}
-            <div className="mb-10 lg:mb-0 flex flex-col justify-center">
-              <h1 className="text-4xl md:text-5xl font-bold leading-tight mb-6 drop-shadow-lg">
-                Do with Robot<br />
-                : AI 로봇시대 생존교육
-              </h1>
-              <p className="text-lg md:text-xl text-gray-200 opacity-90 font-light drop-shadow-md">
-                로봇 대중화 시대가 다가온다!<br />
-                Korea No.1 Robot Edu Do with Robot
-              </p>
+    const [profile, setProfile] = useState<UserProfile | null>(null);
+    const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
+    const [activity, setActivity] = useState<MyActivity>({ threads: [], comments: [] });
+    const [loading, setLoading] = useState(true);
+
+    // 프로필 수정용 상태
+    const [editMode, setEditMode] = useState(false);
+    const [editData, setEditData] = useState<UserProfile | null>(null);
+
+    useEffect(() => {
+        const token = localStorage.getItem('access_token');
+        if (!token) {
+            alert('로그인이 필요합니다.');
+            router.push('/login');
+            return;
+        }
+
+        const fetchData = async () => {
+            setLoading(true);
+            const headers = { 'Authorization': `Bearer ${token}` };
+
+            try {
+                // 1. 내 정보 가져오기
+                const userRes = await fetch('http://127.0.0.1:8000/api/user/me/', { headers });
+                
+                // 401 에러 처리 (토큰 만료 또는 인증 실패)
+                if (userRes.status === 401) {
+                    alert('로그인이 만료되었습니다. 다시 로그인해주세요.');
+                    localStorage.clear();
+                    router.push('/login');
+                    return;
+                }
+                
+                if (userRes.ok) {
+                    const userData = await userRes.json();
+                    setProfile(userData);
+                    setEditData(userData);
+                }
+
+                // 2. 수강 내역 가져오기
+                const courseRes = await fetch('http://127.0.0.1:8000/api/dashboard/my-courses/', { headers });
+                if (courseRes.ok) {
+                    setEnrollments(await courseRes.json());
+                }
+
+                // 3. 활동 내역 가져오기
+                const activityRes = await fetch('http://127.0.0.1:8000/api/community/me/', { headers });
+                if (activityRes.ok) {
+                    setActivity(await activityRes.json());
+                }
+
+            } catch (err) {
+                console.error('Fetch error:', err);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchData();
+    }, [router]);
+
+    // 프로필 저장 핸들러
+    const handleSaveProfile = async () => {
+        if (!editData) return;
+        const token = localStorage.getItem('access_token');
+
+        try {
+            const res = await fetch('http://127.0.0.1:8000/api/user/me/', {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(editData)
+            });
+
+            if (res.status === 401) {
+                alert('로그인이 만료되었습니다. 다시 로그인해주세요.');
+                localStorage.clear();
+                router.push('/login');
+                return;
+            }
+
+            if (res.ok) {
+                alert("회원 정보가 수정되었습니다.");
+                setProfile(editData);
+                setEditMode(false);
+            } else {
+                alert("수정에 실패했습니다.");
+            }
+        } catch (err) {
+            console.error(err);
+            alert("서버 오류가 발생했습니다.");
+        }
+    };
+
+    // 로딩 중
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center min-h-screen">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-sky-600 mx-auto mb-4"></div>
+                    <p className="text-gray-500">로딩 중...</p>
+                </div>
+            </div>
+        );
+    }
+
+    // 프로필 없음
+    if (!profile) {
+        return (
+            <div className="flex items-center justify-center min-h-screen">
+                <div className="text-center max-w-md">
+                    <p className="text-red-500 mb-4">프로필 정보를 불러올 수 없습니다.</p>
+                    <div className="flex gap-2 justify-center">
+                        <button 
+                            onClick={() => {
+                                localStorage.clear();
+                                router.push('/login');
+                            }} 
+                            className="px-4 py-2 bg-sky-600 text-white rounded hover:bg-sky-700"
+                        >
+                            다시 로그인
+                        </button>
+                        <button 
+                            onClick={() => router.push('/dashboard')} 
+                            className="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
+                        >
+                            대시보드로 이동
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // 관심분야 체크박스용 옵션
+    const interestOptions = ["인공지능", "로봇공학", "코딩", "사물인터넷(IoT)", "3D프린팅", "드론"];
+
+    return (
+        <div className="flex min-h-[600px] border border-gray-200 rounded-lg shadow-sm bg-white max-w-7xl mx-auto my-8">
+
+            {/* === 좌측 사이드바 === */}
+            <div className="w-48 lg:w-64 border-r border-gray-200 bg-gray-50 flex flex-col shrink-0">
+                <div className="p-6 border-b border-gray-200">
+                    <h2 className="font-bold text-xl text-gray-800">마이페이지</h2>
+                    <p className="text-xs text-gray-500 mt-1">{profile.last_name}{profile.first_name}님 환영합니다.</p>
+                </div>
+                <nav className="flex-grow p-4 space-y-1">
+                    <button
+                        onClick={() => setActiveTab('profile')}
+                        className={`w-full text-left px-4 py-3 text-sm font-medium rounded-lg transition flex items-center gap-3
+                            ${activeTab === 'profile' ? 'bg-white text-sky-600 shadow-sm border border-gray-100' : 'text-gray-600 hover:bg-gray-100'}`}
+                    >
+                        <span className="text-lg">👤</span> 개인정보 수정
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('activity')}
+                        className={`w-full text-left px-4 py-3 text-sm font-medium rounded-lg transition flex items-center gap-3
+                            ${activeTab === 'activity' ? 'bg-white text-sky-600 shadow-sm border border-gray-100' : 'text-gray-600 hover:bg-gray-100'}`}
+                    >
+                        <span className="text-lg">📝</span> 내가 쓴 글 / 댓글
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('courses')}
+                        className={`w-full text-left px-4 py-3 text-sm font-medium rounded-lg transition flex items-center gap-3
+                            ${activeTab === 'courses' ? 'bg-white text-sky-600 shadow-sm border border-gray-100' : 'text-gray-600 hover:bg-gray-100'}`}
+                    >
+                        <span className="text-lg">📚</span> 내 강의 모아보기
+                    </button>
+                </nav>
+                <div className="p-4 border-t border-gray-200">
+                    <p className="text-xs text-gray-400 text-center">DORO LMS v1.0</p>
+                </div>
             </div>
 
-            {/* 우측: 통계 아이콘 그리드 */}
-            <div className="flex justify-start lg:justify-end">
-              <div className="grid grid-cols-2 gap-x-8 gap-y-8 bg-black/20 p-6 rounded-xl backdrop-blur-sm border border-white/10">
+            {/* === 우측 메인 콘텐츠 === */}
+            <div className="flex-1 p-10 overflow-y-auto h-[600px]">
 
-                {/* Stat 1: 대회 수상 실적 */}
-                <div className="flex items-start gap-3">
-                  <div className="mt-1"><IconTrophy /></div>
-                  <div>
-                    <div className="font-bold text-sm mb-1">대회 수상 실적</div>
-                    <div className="text-xs text-gray-300">대회 출전 · 개최 · 수상 경험 다수</div>
-                  </div>
-                </div>
+                {/* [탭 1] 프로필 관리 */}
+                {activeTab === 'profile' && editData && (
+                    <div className="max-w-2xl">
+                        <div className="flex justify-between items-center mb-8 border-b border-gray-200 pb-4">
+                            <h3 className="text-2xl font-bold text-gray-800">프로필 관리</h3>
+                            {!editMode ? (
+                                <button onClick={() => setEditMode(true)} className="px-4 py-2 bg-gray-100 text-gray-600 rounded hover:bg-gray-200 text-sm font-bold">수정하기</button>
+                            ) : (
+                                <div className="flex gap-2">
+                                    <button onClick={() => { setEditMode(false); setEditData(profile); }} className="px-4 py-2 border border-gray-300 rounded text-sm hover:bg-gray-50">취소</button>
+                                    <button onClick={handleSaveProfile} className="px-4 py-2 bg-sky-600 text-white rounded text-sm font-bold hover:bg-sky-700">저장</button>
+                                </div>
+                            )}
+                        </div>
 
-                {/* Stat 2: 학생 만족도 조사 */}
-                <div className="flex items-start gap-3">
-                  <div className="mt-1"><IconHeart /></div>
-                  <div>
-                    <div className="font-bold text-sm mb-1">학생 만족도 조사</div>
-                    <div className="text-xs text-gray-300">
-                      <span className="font-bold text-lg text-white">4.7</span> / 5.0
+                        <div className="space-y-6">
+                            <div className="grid grid-cols-4 items-center gap-4">
+                                <label className="text-sm font-bold text-gray-600">아이디</label>
+                                <div className="col-span-3 text-gray-800 font-medium">{profile.username}</div>
+                            </div>
+                            <div className="grid grid-cols-4 items-center gap-4">
+                                <label className="text-sm font-bold text-gray-600">이름</label>
+                                <div className="col-span-3 flex gap-2">
+                                    <input
+                                        type="text"
+                                        disabled={!editMode}
+                                        value={editData.last_name || ''}
+                                        onChange={(e) => setEditData({ ...editData, last_name: e.target.value })}
+                                        className="border border-gray-300 rounded p-2 w-20 bg-gray-50 disabled:text-gray-500"
+                                        placeholder="성"
+                                    />
+                                    <input
+                                        type="text"
+                                        disabled={!editMode}
+                                        value={editData.first_name || ''}
+                                        onChange={(e) => setEditData({ ...editData, first_name: e.target.value })}
+                                        className="border border-gray-300 rounded p-2 w-32 bg-gray-50 disabled:text-gray-500"
+                                        placeholder="이름"
+                                    />
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-4 items-center gap-4">
+                                <label className="text-sm font-bold text-gray-600">이메일</label>
+                                <input
+                                    type="email"
+                                    disabled={!editMode}
+                                    value={editData.email || ''}
+                                    onChange={(e) => setEditData({ ...editData, email: e.target.value })}
+                                    className="col-span-3 border border-gray-300 rounded p-2 w-full disabled:bg-gray-100 disabled:text-gray-500"
+                                />
+                            </div>
+                            <div className="grid grid-cols-4 items-center gap-4">
+                                <label className="text-sm font-bold text-gray-600">전화번호</label>
+                                <input
+                                    type="text"
+                                    disabled={!editMode}
+                                    value={editData.phone || ''}
+                                    onChange={(e) => setEditData({ ...editData, phone: e.target.value })}
+                                    className="col-span-3 border border-gray-300 rounded p-2 w-full disabled:bg-gray-100 disabled:text-gray-500"
+                                    placeholder="010-0000-0000"
+                                />
+                            </div>
+
+                            {/* 관심분야 */}
+                            <div className="grid grid-cols-4 items-start gap-4 pt-4 border-t border-gray-100">
+                                <label className="text-sm font-bold text-gray-600 pt-1">관심분야</label>
+                                <div className="col-span-3 grid grid-cols-2 gap-2">
+                                    {interestOptions.map((option) => (
+                                        <label key={option} className="flex items-center gap-2 cursor-pointer">
+                                            <input
+                                                type="checkbox"
+                                                disabled={!editMode}
+                                                checked={editData.interests?.includes(option) || false}
+                                                onChange={(e) => {
+                                                    let currentInterests = editData.interests ? editData.interests.split(',') : [];
+                                                    if (e.target.checked) {
+                                                        currentInterests.push(option);
+                                                    } else {
+                                                        currentInterests = currentInterests.filter(i => i !== option);
+                                                    }
+                                                    setEditData({ ...editData, interests: currentInterests.join(',') });
+                                                }}
+                                                className="w-4 h-4 text-sky-600 rounded focus:ring-sky-500"
+                                            />
+                                            <span className="text-sm text-gray-700">{option}</span>
+                                        </label>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                  </div>
-                </div>
+                )}
 
-                {/* Stat 3: 누적 교육 시간 */}
-                <div className="flex items-start gap-3">
-                  <div className="mt-1"><IconBook /></div>
-                  <div>
-                    <div className="font-bold text-sm mb-1">누적 교육 시간</div>
-                    <div className="text-xs text-gray-300">
-                      <span className="font-bold text-lg text-white">5,208</span> 시간
+                {/* [탭 2] 내 활동 내역 */}
+                {activeTab === 'activity' && (
+                    <div className="space-y-10">
+                        <div>
+                            <h3 className="text-xl font-bold text-gray-800 mb-4 border-l-4 border-sky-500 pl-3">내가 쓴 글</h3>
+                            {activity.threads.length > 0 ? (
+                                <ul className="border-t border-gray-200">
+                                    {activity.threads.map(thread => (
+                                        <li key={thread.id} className="flex justify-between py-3 border-b border-gray-100 hover:bg-gray-50 px-2 cursor-pointer" onClick={() => router.push(`/dashboard/community/${thread.id}`)}>
+                                            <span className="text-gray-700 text-sm truncate max-w-md">{thread.title}</span>
+                                            <span className="text-xs text-gray-400">{new Date(thread.created_at).toLocaleDateString()}</span>
+                                        </li>
+                                    ))}
+                                </ul>
+                            ) : <p className="text-gray-400 text-sm py-4">작성한 글이 없습니다.</p>}
+                        </div>
+
+                        <div>
+                            <h3 className="text-xl font-bold text-gray-800 mb-4 border-l-4 border-sky-500 pl-3">내가 쓴 댓글</h3>
+                            {activity.comments.length > 0 ? (
+                                <ul className="border-t border-gray-200">
+                                    {activity.comments.map(comment => (
+                                        <li key={comment.id} className="py-3 border-b border-gray-100 hover:bg-gray-50 px-2 cursor-pointer">
+                                            <p className="text-gray-800 text-sm mb-1">{comment.content}</p>
+                                            <div className="flex justify-between text-xs text-gray-400">
+                                                <span>원글: {comment.thread_title}</span>
+                                                <span>{new Date(comment.created_at).toLocaleDateString()}</span>
+                                            </div>
+                                        </li>
+                                    ))}
+                                </ul>
+                            ) : <p className="text-gray-400 text-sm py-4">작성한 댓글이 없습니다.</p>}
+                        </div>
                     </div>
-                  </div>
-                </div>
+                )}
 
-                {/* Stat 4: 누적 교육 수강생 */}
-                <div className="flex items-start gap-3">
-                  <div className="mt-1"><IconUser /></div>
-                  <div>
-                    <div className="font-bold text-sm mb-1">누적 교육 수강생</div>
-                    <div className="text-xs text-gray-300">
-                      <span className="font-bold text-lg text-white">40,350</span> 명
+                {/* [탭 3] 내 강의 모아보기 */}
+                {activeTab === 'courses' && (
+                    <div className="space-y-10">
+                        <div>
+                            <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+                                <span className="w-2 h-2 rounded-full bg-green-500"></span>
+                                현재 수강 중인 강의
+                            </h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {enrollments.filter(e => e.lecture.status !== 'CLOSED').map(item => (
+                                    <div key={item.lecture.id} onClick={() => router.push(`/dashboard/courses/${item.lecture.id}/management`)} className="border border-gray-200 rounded-xl p-5 hover:shadow-md transition cursor-pointer bg-white group">
+                                        <div className="flex justify-between items-start mb-2">
+                                            <span className="bg-sky-100 text-sky-600 text-xs font-bold px-2 py-1 rounded">수강중</span>
+                                            <span className="text-xs text-gray-400">{new Date(item.joined_at).toLocaleDateString()} 신청</span>
+                                        </div>
+                                        <h4 className="font-bold text-gray-800 text-lg group-hover:text-sky-600">{item.lecture.name}</h4>
+                                        <p className="text-sm text-gray-500 mt-1">{item.lecture.instructor_name} 교수님</p>
+                                    </div>
+                                ))}
+                                {enrollments.filter(e => e.lecture.status !== 'CLOSED').length === 0 && (
+                                    <div className="col-span-2 text-center py-8 bg-gray-50 rounded-lg text-gray-400 text-sm">수강 중인 강의가 없습니다.</div>
+                                )}
+                            </div>
+                        </div>
+
+                        <div>
+                            <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+                                <span className="w-2 h-2 rounded-full bg-gray-400"></span>
+                                지난 강의 (종료됨)
+                            </h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {enrollments.filter(e => e.lecture.status === 'CLOSED').map(item => (
+                                    <div key={item.lecture.id} className="border border-gray-200 rounded-xl p-5 bg-gray-50 opacity-70">
+                                        <div className="flex justify-between items-start mb-2">
+                                            <span className="bg-gray-200 text-gray-500 text-xs font-bold px-2 py-1 rounded">종료</span>
+                                            <span className="text-xs text-gray-400">{new Date(item.joined_at).toLocaleDateString()} 신청</span>
+                                        </div>
+                                        <h4 className="font-bold text-gray-700 text-lg">{item.lecture.name}</h4>
+                                        <p className="text-sm text-gray-500 mt-1">{item.lecture.instructor_name} 교수님</p>
+                                    </div>
+                                ))}
+                                {enrollments.filter(e => e.lecture.status === 'CLOSED').length === 0 && (
+                                    <div className="col-span-2 text-center py-8 border border-dashed border-gray-300 rounded-lg text-gray-400 text-sm">종료된 강의가 없습니다.</div>
+                                )}
+                            </div>
+                        </div>
                     </div>
-                  </div>
-                </div>
-
-              </div>
+                )}
             </div>
-          </div>
         </div>
-      </div>
-
-      {/* === 하단 흰색 여백 (추가 콘텐츠 영역) === */}
-      <div className="flex-grow bg-white py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-2xl font-bold text-gray-800 mb-4">DORO와 함께 미래를 준비하세요</h2>
-          <p className="text-gray-600 mb-8">체계적인 커리큘럼과 실습 중심의 교육을 제공합니다.</p>
-          <Link href="/course-registration" className="inline-block bg-sky-600 text-white px-8 py-3 rounded-lg font-bold hover:bg-sky-700 transition shadow-md">
-            강의 둘러보기
-          </Link>
-        </div>
-      </div>
-
-    </main>
-  );
-}
-
-// === 아이콘 컴포넌트 (SVG) ===
-function IconTrophy() {
-  return (
-    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16.5 18.75h-9m9 0a3 3 0 013 3h-15a3 3 0 013-3m9 0v-3.375c0-.621-.503-1.125-1.125-1.125h-.871M7.5 18.75v-3.375c0-.621.504-1.125 1.125-1.125h.872m5.007 0H9.497m5.007 0V5.625a2.625 2.625 0 11-5.25 0v9.75m-9-3.75a2.25 2.25 0 012.25-2.25h.75a2.25 2.25 0 012.25 2.25v3a2.25 2.25 0 01-2.25 2.25h-.75a2.25 2.25 0 01-2.25-2.25v-3zm14.25 0a2.25 2.25 0 012.25-2.25h.75a2.25 2.25 0 012.25 2.25v3a2.25 2.25 0 01-2.25 2.25h-.75a2.25 2.25 0 01-2.25-2.25v-3z" /></svg>
-  );
-}
-
-function IconHeart() {
-  return (
-    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" /></svg>
-  );
-}
-
-function IconBook() {
-  return (
-    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" /></svg>
-  );
-}
-
-function IconUser() {
-  return (
-    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A7.5 7.5 0 014.501 20.118z" /></svg>
-  );
+    );
 }

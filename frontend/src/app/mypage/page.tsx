@@ -12,14 +12,14 @@ interface UserProfile {
     last_name: string;
     phone: string;
     birth: string;
-    interests: string; // "인공지능, 로봇" 형태의 문자열
+    interests: string;
 }
 
 interface Lecture {
     id: number;
     name: string;
     instructor_name: string;
-    status: 'RECRUITING' | 'OPEN' | 'CLOSED';
+    status: 'RECRUITING' | 'OPEN' | 'IN_PROGRESS' | 'CLOSED';
 }
 
 interface Enrollment {
@@ -40,6 +40,7 @@ export default function MyPage() {
     const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
     const [activity, setActivity] = useState<MyActivity>({ threads: [], comments: [] });
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
     // 프로필 수정용 상태
     const [editMode, setEditMode] = useState(false);
@@ -48,6 +49,7 @@ export default function MyPage() {
     useEffect(() => {
         const token = localStorage.getItem('access_token');
         if (!token) {
+            console.log('No token found, redirecting to login');
             router.push('/login');
             return;
         }
@@ -57,24 +59,50 @@ export default function MyPage() {
             const headers = { 'Authorization': `Bearer ${token}` };
 
             try {
+                console.log('Fetching user data...');
+                
                 // 1. 내 정보 가져오기
                 const userRes = await fetch('http://127.0.0.1:8000/api/user/me/', { headers });
+                console.log('User response status:', userRes.status);
+                
                 if (userRes.ok) {
                     const userData = await userRes.json();
+                    console.log('User data:', userData);
                     setProfile(userData);
                     setEditData(userData);
+                } else {
+                    const errorData = await userRes.text();
+                    console.error('User fetch failed:', userRes.status, errorData);
+                    setError(`사용자 정보 로드 실패: ${userRes.status}`);
                 }
 
                 // 2. 수강 내역 가져오기
                 const courseRes = await fetch('http://127.0.0.1:8000/api/dashboard/my-courses/', { headers });
-                if (courseRes.ok) setEnrollments(await courseRes.json());
+                console.log('Course response status:', courseRes.status);
+                
+                if (courseRes.ok) {
+                    const courseData = await courseRes.json();
+                    console.log('Course data:', courseData);
+                    setEnrollments(courseData);
+                } else {
+                    console.error('Course fetch failed:', courseRes.status);
+                }
 
                 // 3. 활동 내역 가져오기
                 const activityRes = await fetch('http://127.0.0.1:8000/api/community/me/', { headers });
-                if (activityRes.ok) setActivity(await activityRes.json());
+                console.log('Activity response status:', activityRes.status);
+                
+                if (activityRes.ok) {
+                    const activityData = await activityRes.json();
+                    console.log('Activity data:', activityData);
+                    setActivity(activityData);
+                } else {
+                    console.error('Activity fetch failed:', activityRes.status);
+                }
 
             } catch (err) {
-                console.error(err);
+                console.error('Fetch error:', err);
+                setError('서버 연결에 실패했습니다.');
             } finally {
                 setLoading(false);
             }
@@ -111,8 +139,59 @@ export default function MyPage() {
         }
     };
 
-    if (loading) return <div className="p-10 text-center">로딩 중...</div>;
-    if (!profile) return null;
+    // 로딩 중
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center min-h-screen">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-sky-600 mx-auto mb-4"></div>
+                    <p className="text-gray-500">로딩 중...</p>
+                </div>
+            </div>
+        );
+    }
+
+    // 에러 발생
+    if (error) {
+        return (
+            <div className="flex items-center justify-center min-h-screen">
+                <div className="text-center max-w-md">
+                    <p className="text-red-500 mb-4">{error}</p>
+                    <button 
+                        onClick={() => router.push('/dashboard')} 
+                        className="px-4 py-2 bg-sky-600 text-white rounded hover:bg-sky-700"
+                    >
+                        대시보드로 돌아가기
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    // 프로필 없음
+    if (!profile) {
+        return (
+            <div className="flex items-center justify-center min-h-screen">
+                <div className="text-center max-w-md">
+                    <p className="text-red-500 mb-4">프로필 정보를 불러올 수 없습니다.</p>
+                    <div className="flex gap-2 justify-center">
+                        <button 
+                            onClick={() => window.location.reload()} 
+                            className="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
+                        >
+                            다시 시도
+                        </button>
+                        <button 
+                            onClick={() => router.push('/dashboard')} 
+                            className="px-4 py-2 bg-sky-600 text-white rounded hover:bg-sky-700"
+                        >
+                            대시보드로 이동
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     // 관심분야 체크박스용 옵션
     const interestOptions = ["인공지능", "로봇공학", "코딩", "사물인터넷(IoT)", "3D프린팅", "드론"];
@@ -183,7 +262,7 @@ export default function MyPage() {
                                     <input
                                         type="text"
                                         disabled={!editMode}
-                                        value={editData.last_name}
+                                        value={editData.last_name || ''}
                                         onChange={(e) => setEditData({ ...editData, last_name: e.target.value })}
                                         className="border border-gray-300 rounded p-2 w-20 bg-gray-50 disabled:text-gray-500"
                                         placeholder="성"
@@ -191,7 +270,7 @@ export default function MyPage() {
                                     <input
                                         type="text"
                                         disabled={!editMode}
-                                        value={editData.first_name}
+                                        value={editData.first_name || ''}
                                         onChange={(e) => setEditData({ ...editData, first_name: e.target.value })}
                                         className="border border-gray-300 rounded p-2 w-32 bg-gray-50 disabled:text-gray-500"
                                         placeholder="이름"
@@ -203,7 +282,7 @@ export default function MyPage() {
                                 <input
                                     type="email"
                                     disabled={!editMode}
-                                    value={editData.email}
+                                    value={editData.email || ''}
                                     onChange={(e) => setEditData({ ...editData, email: e.target.value })}
                                     className="col-span-3 border border-gray-300 rounded p-2 w-full disabled:bg-gray-100 disabled:text-gray-500"
                                 />
@@ -220,7 +299,7 @@ export default function MyPage() {
                                 />
                             </div>
 
-                            {/* 관심분야 (체크박스 형태 구현) */}
+                            {/* 관심분야 */}
                             <div className="grid grid-cols-4 items-start gap-4 pt-4 border-t border-gray-100">
                                 <label className="text-sm font-bold text-gray-600 pt-1">관심분야</label>
                                 <div className="col-span-3 grid grid-cols-2 gap-2">
@@ -229,7 +308,7 @@ export default function MyPage() {
                                             <input
                                                 type="checkbox"
                                                 disabled={!editMode}
-                                                checked={editData.interests?.includes(option)}
+                                                checked={editData.interests?.includes(option) || false}
                                                 onChange={(e) => {
                                                     let currentInterests = editData.interests ? editData.interests.split(',') : [];
                                                     if (e.target.checked) {
@@ -253,7 +332,6 @@ export default function MyPage() {
                 {/* [탭 2] 내 활동 내역 */}
                 {activeTab === 'activity' && (
                     <div className="space-y-10">
-                        {/* 작성한 글 */}
                         <div>
                             <h3 className="text-xl font-bold text-gray-800 mb-4 border-l-4 border-sky-500 pl-3">내가 쓴 글</h3>
                             {activity.threads.length > 0 ? (
@@ -268,13 +346,12 @@ export default function MyPage() {
                             ) : <p className="text-gray-400 text-sm py-4">작성한 글이 없습니다.</p>}
                         </div>
 
-                        {/* 작성한 댓글 */}
                         <div>
                             <h3 className="text-xl font-bold text-gray-800 mb-4 border-l-4 border-sky-500 pl-3">내가 쓴 댓글</h3>
                             {activity.comments.length > 0 ? (
                                 <ul className="border-t border-gray-200">
                                     {activity.comments.map(comment => (
-                                        <li key={comment.id} className="py-3 border-b border-gray-100 hover:bg-gray-50 px-2 cursor-pointer" onClick={() => router.push(`/dashboard/community/${comment.id}`)}> {/* 댓글 ID 대신 원글 ID로 이동 필요할 수 있음 */}
+                                        <li key={comment.id} className="py-3 border-b border-gray-100 hover:bg-gray-50 px-2 cursor-pointer">
                                             <p className="text-gray-800 text-sm mb-1">{comment.content}</p>
                                             <div className="flex justify-between text-xs text-gray-400">
                                                 <span>원글: {comment.thread_title}</span>
@@ -291,7 +368,6 @@ export default function MyPage() {
                 {/* [탭 3] 내 강의 모아보기 */}
                 {activeTab === 'courses' && (
                     <div className="space-y-10">
-                        {/* 현재 수강 중인 강의 */}
                         <div>
                             <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
                                 <span className="w-2 h-2 rounded-full bg-green-500"></span>
@@ -314,7 +390,6 @@ export default function MyPage() {
                             </div>
                         </div>
 
-                        {/* 지난 강의 (종료됨) */}
                         <div>
                             <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
                                 <span className="w-2 h-2 rounded-full bg-gray-400"></span>
