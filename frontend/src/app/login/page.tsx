@@ -30,10 +30,23 @@ export default function LoginPage() {
                 localStorage.setItem('access_token', data.token.access);
                 localStorage.setItem('refresh_token', data.token.refresh);
 
-                // 2. [중요] 로그인 상태 변경 이벤트 발생 (Navbar 갱신용)
+                // 2. 로그인 상태 변경 이벤트 발생 (Navbar 갱신용)
                 window.dispatchEvent(new Event('authChange'));
 
-                router.push('/');
+                // 3. role에 따라 대시보드 분기
+                const role = data.user.role; // 숫자거나 문자열일 수 있음
+
+                const isTeacher =
+                    role === 'TEACHER' ||
+                    role === 'teacher' ||
+                    role === 1 || // 백엔드에서 1이 강사일 때
+                    role === 'INSTRUCTOR';
+
+                if (isTeacher) {
+                    router.push('/teacher/dashboard');
+                } else {
+                    router.push('/student/dashboard'); // 학생용 대시보드
+                }
             } else {
                 setError(data.error || '로그인 정보를 확인해주세요.');
             }
