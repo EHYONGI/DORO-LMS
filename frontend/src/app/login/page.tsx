@@ -33,7 +33,7 @@ export default function LoginPage() {
                 // 2. [중요] 로그인 상태 변경 이벤트 발생 (Navbar 갱신용)
                 window.dispatchEvent(new Event('authChange'));
 
-                router.push('/dashboard');
+                router.push('/');
             } else {
                 setError(data.error || '로그인 정보를 확인해주세요.');
             }
