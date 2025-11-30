@@ -68,7 +68,7 @@ export default function Navbar() {
                             수강신청
                         </Link>
 
-                        {/* 🔥 대시보드 → /student/dashboard 로 변경 */}
+                        {/* 대시보드 → /student/dashboard 로 변경 */}
                         <Link href="/student/dashboard" className="hover:text-gray-200 text-sm font-medium">
                             대시보드
                         </Link>
@@ -78,8 +78,8 @@ export default function Navbar() {
                             상담페이지
                         </Link>
 
-                        {/* 마이페이지 → /mypage */}
-                        <Link href="/mypage" className="hover:text-gray-200 text-sm font-medium">
+                        {/* 마이페이지 → /student/mypage */}
+                        <Link href="/student/mypage" className="hover:text-gray-200 text-sm font-medium">
                             마이페이지
                         </Link>
                     </div>
