@@ -4,7 +4,8 @@ from django.shortcuts import get_object_or_404
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from .models import Enrollment, Assignment
+from rest_framework import status
+from .models import Enrollment, Assignment, Lecture
 from .serializers import EnrollmentSerializer, AssignmentSerializer
 from .models import LectureNotice
 from .serializers import LectureNoticeSerializer
@@ -69,13 +70,31 @@ def lecture_notice_detail_api(request, pk):
     serializer = LectureNoticeSerializer(notice)
     return Response(serializer.data)
 
-@api_view(['GET'])
+@api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated])
 def course_assignment_list_api(request, lecture_id):
-    """특정 강의의 과제 목록 조회"""
-    # URL에서 넘겨받은 lecture_id로 필터링
-    tasks = Assignment.objects.filter(lecture_id=lecture_id).order_by('deadline')
-    serializer = AssignmentSerializer(tasks, many=True)
-    return Response(serializer.data)
+    """
+    GET  : 특정 강의 과제 목록 조회
+    POST : 특정 강의에 새 과제 생성 (강사만)
+    """
+    lecture = get_object_or_404(Lecture, pk=lecture_id)
+
+    if request.method == 'GET':
+        tasks = Assignment.objects.filter(lecture=lecture).order_by('deadline')
+        serializer = AssignmentSerializer(tasks, many=True)
+        return Response(serializer.data)
+
+    # POST – 강사만 생성 가능
+    if request.user != lecture.instructor:
+        return Response(
+            {"detail": "이 강의의 강사만 과제를 생성할 수 있습니다."},
+            status=status.HTTP_403_FORBIDDEN,
+        )
+
+    serializer = AssignmentSerializer(data=request.data)
+    if serializer.is_valid():
+        serializer.save(lecture=lecture)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 # [삭제됨] my_activity_api는 여기 있으면 안 됩니다.

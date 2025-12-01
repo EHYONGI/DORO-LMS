@@ -42,6 +42,9 @@ INSTALLED_APPS = [
     'lecture.apps.LectureConfig',
     'notice.apps.NoticeConfig',
     'consultations.apps.ConsultationsConfig',
+
+    'rest_framework',
+    'corsheaders',
 ]
 
 MIDDLEWARE = [

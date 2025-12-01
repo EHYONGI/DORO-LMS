@@ -2,92 +2,126 @@
 'use client';
 
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useEffect, useState } from 'react';
+
+interface Assignment {
+  id: number;
+  title: string;
+  deadline: string;
+  content: string;
+  lecture_name?: string;
+}
 
 export default function TeacherAssignmentPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // 선택된 과목 / 과제는 나중에 실제 데이터랑 연결하면 됨 (지금은 더미)
   const courseId = searchParams.get('course') ?? '1';
 
-  const handleEdit = () => {
-    router.push(`/teacher/assignment/write?course=${courseId}&assignmentId=1`);
+  const [assignments, setAssignments] = useState<Assignment[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // 과제 목록 불러오기
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const token = localStorage.getItem('access_token');
+    if (!token) {
+      setError('로그인이 필요합니다.');
+      setLoading(false);
+      return;
+    }
+
+    async function fetchAssignments() {
+      try {
+        const res = await fetch(
+          `http://127.0.0.1:8000/api/lecture/${courseId}/assignments/`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          },
+        );
+
+        if (!res.ok) {
+          throw new Error('과제 목록을 불러오지 못했습니다.');
+        }
+
+        const data: Assignment[] = await res.json();
+        setAssignments(data);
+      } catch (err: any) {
+        setError(err.message ?? '오류가 발생했습니다.');
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchAssignments();
+  }, [courseId]);
+
+  const handleCreate = () => {
+    router.push(`/teacher/assignment/write?course=${courseId}`);
   };
 
   return (
-    <div className="max-w-7xl mx-auto py-10 px-4 sm:px-6 lg:px-8">
-      {/* 상단 탭 (강의관리 / 공지 확인 / 출결 확인) - 디자인용 더미 탭 */}
-      <div className="flex gap-2 mb-6 border-b border-gray-300 pb-1">
-        <button
-          className="px-6 py-2 rounded-t-lg font-bold text-sm border-t border-l border-r bg-sky-600 text-white border-sky-600"
-        >
-          강의관리
-        </button>
-        <button
-          className="px-6 py-2 rounded-t-lg font-bold text-sm border-t border-l border-r border-gray-300 bg-white text-gray-500"
-          onClick={() => router.push('/teacher/dashboard?tab=notice')}
-        >
-          공지 확인
-        </button>
-        <button
-          className="px-6 py-2 rounded-t-lg font-bold text-sm border-t border-l border-r border-gray-300 bg-white text-gray-500"
-          onClick={() => router.push('/teacher/dashboard?tab=attendance')}
-        >
-          출결 확인
-        </button>
-      </div>
-
-      {/* 메인 박스 */}
-      <div className="bg-white border border-gray-200 rounded-b-lg shadow-sm p-6 min-h-[520px]">
-        {/* 제목줄 */}
+    <div className="min-h-screen bg-gray-100 px-6 py-8">
+      <div className="max-w-5xl mx-auto">
+        {/* 상단 타이틀 + 새 과제 버튼 */}
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-base font-bold text-gray-800">과제 제목</h2>
+          <h1 className="text-xl font-bold text-gray-800">과제 관리</h1>
           <button
             type="button"
-            onClick={handleEdit}
-            className="px-4 py-1.5 text-xs bg-gray-100 border border-gray-300 rounded hover:bg-gray-200"
+            onClick={handleCreate}
+            className="px-4 py-2 text-sm bg-sky-600 text-white rounded hover:bg-sky-700"
           >
-            수정하기
+            새 과제 등록
           </button>
         </div>
 
-        {/* 마감일 / 제출방법 / 파일업로드 구역 */}
-        <div className="border border-gray-200 text-xs text-gray-700 mb-6">
-          <div className="flex border-b border-gray-200">
-            <div className="w-32 bg-gray-50 px-3 py-2 border-r border-gray-200">
-              마감일자
-            </div>
-            <div className="flex-1 px-3 py-2">
-              20XX년 XX월 XX일 오후 11:59까지
-            </div>
-          </div>
-          <div className="flex border-b border-gray-200">
-            <div className="w-32 bg-gray-50 px-3 py-2 border-r border-gray-200">
-              배점
-            </div>
-            <div className="flex-1 px-3 py-2">
-              XX 점
-            </div>
-          </div>
-          <div className="flex items-center">
-            <div className="w-32 bg-gray-50 px-3 py-2 border-r border-gray-200">
-              제출 방법
-            </div>
-            <div className="flex-1 px-3 py-2 flex items-center justify-between">
-              <span>파일 업로드</span>
-              <button
-                type="button"
-                className="px-3 py-1 text-xs border border-gray-300 bg-white rounded hover:bg-gray-50"
-              >
-                파일 보기
-              </button>
-            </div>
-          </div>
-        </div>
+        {/* 목록 박스 */}
+        <div className="bg-white border border-gray-200 rounded-lg shadow-sm">
+          {loading && (
+            <div className="p-6 text-sm text-gray-500">과제 목록을 불러오는 중입니다…</div>
+          )}
 
-        {/* 과제 내용 박스 (넓은 흰 박스) */}
-        <div className="border border-gray-200 bg-white h-[360px] flex items-center justify-center text-sm text-gray-400">
-          과제 내용 설명
+          {!loading && error && (
+            <div className="p-6 text-sm text-red-500">{error}</div>
+          )}
+
+          {!loading && !error && assignments.length === 0 && (
+            <div className="p-6 text-sm text-gray-500">
+              아직 등록된 과제가 없습니다. 우측 상단 버튼으로 새 과제를 추가할 수 있습니다.
+            </div>
+          )}
+
+          {!loading && !error && assignments.length > 0 && (
+            <ul>
+              {assignments.map((a) => (
+                <li
+                  key={a.id}
+                  className="px-6 py-4 border-t border-gray-200 first:border-t-0 hover:bg-gray-50 cursor-pointer"
+                  onClick={() =>
+                    router.push(
+                      `/teacher/assignment/write?course=${courseId}&assignmentId=${a.id}`,
+                    )
+                  }
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-semibold text-gray-800">{a.title}</p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        마감일:{' '}
+                        {a.deadline
+                          ? new Date(a.deadline).toLocaleString()
+                          : '마감일 미설정'}
+                      </p>
+                    </div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       </div>
     </div>
