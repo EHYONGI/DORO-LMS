@@ -1,481 +1,532 @@
-// app/teacher/counseling/page.tsx
+// app/teacher/consultation/page.tsx
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
-const API_BASE_URL = 'http://127.0.0.1:8000';
-
-type CounselTab = 'request' | 'schedule' | 'history';
-
-interface UserProfile {
-  fullName: string;
-  major: string;
-}
-
-interface CounselRequest {
+// 상담 요청(강사용) 타입
+interface ConsultationRequest {
   id: number;
   student_name: string;
-  counsel_type: string;
-  summary: string;
-  datetime: string;
-  status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'DONE';
+  consultation_type: 'CAREER' | 'CODING' | 'OTHER' | string;
+  method: 'OFFLINE' | 'ONLINE' | string;
+  topic: string;
+  content: string;
+  requested_at: string;    // 신청 날짜
+  scheduled_at: string | null; // 승인된 상담 일시
+  status: 'PENDING' | 'APPROVED' | 'COMPLETED' | 'CANCELED' | string;
 }
 
-interface CounselSchedule {
-  id: number;
-  title: string;
-  datetime: string;
-  student_name: string;
-}
+type ActiveTab = 'request' | 'calendar';
 
-interface CounselHistory {
-  id: number;
-  student_name: string;
-  counsel_type: string;
-  datetime: string;
-  result: string;
-}
+const API_BASE = 'http://127.0.0.1:8000'; // 필요하면 수정해서 사용
 
-export default function TeacherCounselingPage() {
+export default function TeacherConsultationPage() {
   const router = useRouter();
 
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [activeTab, setActiveTab] = useState<CounselTab>('request');
+  const [activeTab, setActiveTab] = useState<ActiveTab>('request');
 
-  const [requests, setRequests] = useState<CounselRequest[]>([]);
-  const [schedules, setSchedules] = useState<CounselSchedule[]>([]);
-  const [historyList, setHistoryList] = useState<CounselHistory[]>([]);
+  const [requests, setRequests] = useState<ConsultationRequest[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  // 필터
+  const [filters, setFilters] = useState({
+    student: '',
+    type: '',
+    status: '',
+    method: '',
+    dateOrder: '', // '' | 'ASC' | 'DESC'
+  });
 
-  // 강사 권한 / 프로필 세팅
+  // 달력 상태
+  const [currentMonth, setCurrentMonth] = useState(() => {
+    const d = new Date();
+    d.setDate(1);
+    return d;
+  });
+
+  // 로그인 체크 + 데이터 불러오기
   useEffect(() => {
-    const userRaw = localStorage.getItem('user');
-    const access = localStorage.getItem('access_token');
-
-    if (!userRaw || !access) {
+    const token = localStorage.getItem('access_token');
+    if (!token) {
+      alert('로그인이 필요합니다.');
       router.push('/login');
       return;
     }
 
-    try {
-      const user = JSON.parse(userRaw);
-      const r = user.role;
-
-      const isTeacher =
-        r === 2 ||
-        r === '2' ||
-        r === 'TEACHER' ||
-        r === 'teacher' ||
-        r === 'INSTRUCTOR';
-
-      if (!isTeacher) {
-        alert('강사 전용 페이지입니다.');
-        router.push('/student/dashboard');
-        return;
-      }
-
-      const fullName =
-        `${user.last_name || ''}${user.first_name || ''}`.trim() || user.username;
-      const major = user.interests || '';
-
-      setProfile({ fullName, major });
-    } catch {
-      router.push('/login');
-    }
-  }, [router]);
-
-  // 상담 관련 데이터 (지금은 더미)
-  useEffect(() => {
-    const token = localStorage.getItem('access_token');
-    if (!token) return;
-
-    const fetchCounselData = async () => {
+    const fetchRequests = async () => {
       setLoading(true);
-      setError(null);
-
       try {
-        // TODO: 실제 API 붙일 때 여기 사용
-        // const res = await fetch(`${API_BASE_URL}/api/teacher/counseling/overview/`, {
-        //   headers: { Authorization: `Bearer ${token}` },
-        // });
+        // 강사용 상담 요청 리스트 엔드포인트 (API 명세에 맞게 수정해서 사용)
+        const res = await fetch(`${API_BASE}/api/consult/teacher/requests/`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
 
-        // if (!res.ok) {
-        //   setError('상담 정보를 불러오지 못했습니다.');
-        //   return;
-        // }
+        if (!res.ok) {
+          throw new Error('failed to fetch');
+        }
 
-        // const data = await res.json();
-        // setRequests(data.requests || []);
-        // setSchedules(data.schedules || []);
-        // setHistoryList(data.history || []);
-
-        const dummyRequests: CounselRequest[] = [
-          {
-            id: 1,
-            student_name: '홍길동',
-            counsel_type: '진로 상담',
-            summary: '진학 관련 상담을 희망합니다.',
-            datetime: '2025-03-01 14:00',
-            status: 'PENDING',
-          },
-          {
-            id: 2,
-            student_name: '이몽룡',
-            counsel_type: '학습 상담',
-            summary: '성적 향상 방법에 대해 상담 요청',
-            datetime: '2025-03-02 10:30',
-            status: 'APPROVED',
-          },
-          {
-            id: 3,
-            student_name: '성춘향',
-            counsel_type: '기타',
-            summary: '개인 사유로 상담 요청',
-            datetime: '2025-02-27 16:00',
-            status: 'DONE',
-          },
-        ];
-
-        const dummySchedules: CounselSchedule[] = [
-          {
-            id: 1,
-            title: '진로 상담 - 홍길동',
-            datetime: '2025-03-01 14:00',
-            student_name: '홍길동',
-          },
-          {
-            id: 2,
-            title: '학습 상담 - 이몽룡',
-            datetime: '2025-03-02 10:30',
-            student_name: '이몽룡',
-          },
-        ];
-
-        const dummyHistory: CounselHistory[] = [
-          {
-            id: 1,
-            student_name: '성춘향',
-            counsel_type: '학습 상담',
-            datetime: '2025-02-01 15:00',
-            result: '학습 계획 수립 완료',
-          },
-          {
-            id: 2,
-            student_name: '임꺽정',
-            counsel_type: '생활 지도',
-            datetime: '2025-01-20 11:00',
-            result: '지속 관찰 필요',
-          },
-        ];
-
-        setRequests(dummyRequests);
-        setSchedules(dummySchedules);
-        setHistoryList(dummyHistory);
-      } catch {
-        setError('상담 정보를 불러오는 중 오류가 발생했습니다.');
+        const data = await res.json();
+        setRequests(data);
+      } catch (e) {
+        console.error(e);
+        alert('상담 요청 목록을 불러오지 못했습니다.');
       } finally {
         setLoading(false);
       }
     };
 
-    fetchCounselData();
-  }, []);
+    fetchRequests();
+  }, [router]);
 
-  const getStatusLabel = (status: CounselRequest['status']) => {
-    switch (status) {
-      case 'PENDING':
-        return '신청대기';
-      case 'APPROVED':
-        return '승인';
-      case 'REJECTED':
-        return '거절';
-      case 'DONE':
-        return '완료';
-      default:
-        return status;
+  // 상태 텍스트
+  const getStatusText = (s: string) => {
+    const map: Record<string, string> = {
+      PENDING: '신청대기',
+      APPROVED: '승인됨',
+      COMPLETED: '완료',
+      CANCELED: '취소됨',
+    };
+    return map[s] ?? s;
+  };
+
+  // 유형 텍스트
+  const getTypeText = (t: string) => {
+    const map: Record<string, string> = {
+      CAREER: '진로상담',
+      CODING: '코딩질문',
+      OTHER: '기타',
+    };
+    return map[t] ?? t;
+  };
+
+  // 필터 적용된 리스트
+  const filteredRequests = useMemo(() => {
+    let list = [...requests];
+
+    if (filters.student) {
+      list = list.filter((r) =>
+        r.student_name.toLowerCase().includes(filters.student.toLowerCase())
+      );
+    }
+    if (filters.type) {
+      list = list.filter((r) => r.consultation_type === filters.type);
+    }
+    if (filters.status) {
+      list = list.filter((r) => r.status === filters.status);
+    }
+    if (filters.method) {
+      list = list.filter((r) => r.method === filters.method);
+    }
+    if (filters.dateOrder === 'ASC') {
+      list.sort(
+        (a, b) =>
+          new Date(a.requested_at).getTime() -
+          new Date(b.requested_at).getTime()
+      );
+    } else if (filters.dateOrder === 'DESC') {
+      list.sort(
+        (a, b) =>
+          new Date(b.requested_at).getTime() -
+          new Date(a.requested_at).getTime()
+      );
+    }
+
+    return list;
+  }, [requests, filters]);
+
+  // 상태 변경 (승인 / 거절 등)
+  const handleStatusChange = async (
+    id: number,
+    nextStatus: 'APPROVED' | 'CANCELED' | 'COMPLETED'
+  ) => {
+    const token = localStorage.getItem('access_token');
+    if (!token) return;
+
+    if (!confirm(`해당 상담을 ${getStatusText(nextStatus)} 상태로 변경할까요?`)) {
+      return;
+    }
+
+    try {
+      const res = await fetch(`${API_BASE}/api/consult/teacher/requests/${id}/`, {
+        method: 'PATCH',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status: nextStatus }),
+      });
+
+      if (!res.ok) {
+        throw new Error('failed to update status');
+      }
+
+      setRequests((prev) =>
+        prev.map((r) => (r.id === id ? { ...r, status: nextStatus } : r))
+      );
+      alert('상태가 변경되었습니다.');
+    } catch (e) {
+      console.error(e);
+      alert('상태 변경에 실패했습니다.');
     }
   };
 
-  const handleApprove = (id: number) => {
-    alert(`상담 ID ${id} 승인 기능은 추후 구현 예정입니다.`);
+  // ========= 캘린더 관련 계산 =========
+  const year = currentMonth.getFullYear();
+  const month = currentMonth.getMonth(); // 0~11
+
+  const firstDayOfWeek = new Date(year, month, 1).getDay(); // 0=일
+  const lastDate = new Date(year, month + 1, 0).getDate();
+
+  const calendarCells = useMemo(() => {
+    const cells: (number | null)[] = [];
+    // 앞쪽 비어있는 칸
+    for (let i = 0; i < firstDayOfWeek; i += 1) cells.push(null);
+    // 날짜
+    for (let d = 1; d <= lastDate; d += 1) cells.push(d);
+    return cells;
+  }, [firstDayOfWeek, lastDate]);
+
+  // 해당 날짜의 일정(승인/완료된 상담만 표시)
+  const getEventsForDate = (day: number) => {
+    const thisDay = new Date(year, month, day);
+    return requests.filter((r) => {
+      if (!r.scheduled_at) return false;
+      const d = new Date(r.scheduled_at);
+      return (
+        d.getFullYear() === thisDay.getFullYear() &&
+        d.getMonth() === thisDay.getMonth() &&
+        d.getDate() === thisDay.getDate() &&
+        (r.status === 'APPROVED' || r.status === 'COMPLETED')
+      );
+    });
   };
 
-  const handleReject = (id: number) => {
-    alert(`상담 ID ${id} 거절 기능은 추후 구현 예정입니다.`);
-  };
-
-  const handleDone = (id: number) => {
-    alert(`상담 ID ${id} 완료 처리 기능은 추후 구현 예정입니다.`);
-  };
-
-  const handleViewDetail = (id: number) => {
-    alert(`상담 ID ${id} 상세보기 기능은 추후 구현 예정입니다.`);
+  const changeMonth = (diff: number) => {
+    setCurrentMonth((prev) => {
+      const d = new Date(prev);
+      d.setMonth(d.getMonth() + diff);
+      d.setDate(1);
+      return d;
+    });
   };
 
   return (
-    <div className="min-h-[calc(100vh-80px)] bg-gray-100 px-6 py-8">
-      <div className="max-w-7xl mx-auto">
-        {/* 가운데 큰 흰 카드만 남김 */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-          {/* 상단 제목 영역 */}
-          <div className="px-8 pt-6 pb-4 border-b border-gray-200">
-            <h1 className="text-2xl font-bold text-sky-800">상담 관리</h1>
-            <p className="mt-1 text-sm text-gray-500">
-              학생 상담 신청을 확인하고 상담 일정 및 진행 내역을 관리할 수 있습니다.
-            </p>
+    <div className="max-w-7xl mx-auto py-10 px-4 sm:px-6 lg:px-8">
+      {/* 상단 탭 - 학생용 코드 레이아웃 맞춤 */}
+      <div className="flex gap-2 mb-6 border-b border-gray-300 pb-1">
+        <button
+          onClick={() => setActiveTab('request')}
+          className={`px-6 py-2 rounded-t-lg font-bold text-sm transition border-t border-l border-r border-gray-300
+            ${
+              activeTab === 'request'
+                ? 'bg-sky-600 text-white border-sky-600'
+                : 'bg-white text-gray-500 hover:bg-gray-50'
+            }`}
+        >
+          상담요청 관리
+        </button>
+        <button
+          onClick={() => setActiveTab('calendar')}
+          className={`px-6 py-2 rounded-t-lg font-bold text-sm transition border-t border-l border-r border-gray-300
+            ${
+              activeTab === 'calendar'
+                ? 'bg-sky-600 text-white border-sky-600'
+                : 'bg-white text-gray-500 hover:bg-gray-50'
+            }`}
+        >
+          일정관리
+        </button>
+      </div>
+
+      {/* 탭 1 : 상담요청 관리 */}
+      {activeTab === 'request' && (
+        <div className="bg-white rounded-b-lg border border-gray-200 p-6 shadow-sm min-h-[500px]">
+          {/* 필터 바 - 학생명 / 유형 / 상태 / 날짜 */}
+          <div className="flex flex-wrap gap-4 mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200 items-center">
+            {/* 학생명 검색 (input) */}
+            <input
+              type="text"
+              value={filters.student}
+              onChange={(e) =>
+                setFilters((f) => ({ ...f, student: e.target.value }))
+              }
+              placeholder="학생명"
+              className="border border-gray-300 p-2 rounded text-sm text-gray-700 focus:border-sky-500 outline-none"
+            />
+
+            {/* 상담유형 */}
+            <select
+              value={filters.type}
+              onChange={(e) =>
+                setFilters((f) => ({ ...f, type: e.target.value }))
+              }
+              className="border border-gray-300 p-2 rounded text-sm text-gray-700 focus:border-sky-500 outline-none"
+            >
+              <option value="">상담유형 전체</option>
+              <option value="CAREER">진로상담</option>
+              <option value="CODING">코딩질문</option>
+              <option value="OTHER">기타</option>
+            </select>
+
+            {/* 상태 */}
+            <select
+              value={filters.status}
+              onChange={(e) =>
+                setFilters((f) => ({ ...f, status: e.target.value }))
+              }
+              className="border border-gray-300 p-2 rounded text-sm text-gray-700 focus:border-sky-500 outline-none"
+            >
+              <option value="">상태 전체</option>
+              <option value="PENDING">신청대기</option>
+              <option value="APPROVED">승인됨</option>
+              <option value="COMPLETED">완료</option>
+              <option value="CANCELED">취소됨</option>
+            </select>
+
+            {/* 상담형태 */}
+            <select
+              value={filters.method}
+              onChange={(e) =>
+                setFilters((f) => ({ ...f, method: e.target.value }))
+              }
+              className="border border-gray-300 p-2 rounded text-sm text-gray-700 focus:border-sky-500 outline-none"
+            >
+              <option value="">상담형태 전체</option>
+              <option value="OFFLINE">대면상담</option>
+              <option value="ONLINE">비대면상담</option>
+            </select>
+
+            {/* 날짜 정렬 */}
+            <select
+              value={filters.dateOrder}
+              onChange={(e) =>
+                setFilters((f) => ({ ...f, dateOrder: e.target.value }))
+              }
+              className="border border-gray-300 p-2 rounded text-sm text-gray-700 focus:border-sky-500 outline-none"
+            >
+              <option value="">날짜정렬 없음</option>
+              <option value="ASC">신청일 ↑</option>
+              <option value="DESC">신청일 ↓</option>
+            </select>
+
+            <button
+              onClick={() =>
+                setFilters({
+                  student: '',
+                  type: '',
+                  status: '',
+                  method: '',
+                  dateOrder: '',
+                })
+              }
+              className="text-xs px-3 py-2 border border-gray-300 rounded hover:bg-gray-100"
+            >
+              필터 초기화
+            </button>
           </div>
 
-          {/* 서브 탭 */}
-          <div className="px-8 pt-4 border-b border-gray-200">
-            <div className="flex gap-2">
+          {/* 리스트 테이블 */}
+          {loading ? (
+            <p className="text-center py-10 text-gray-500">로딩 중...</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm text-left">
+                <thead className="bg-gray-50 border-b border-gray-200">
+                  <tr className="text-gray-600">
+                    <th className="py-3 px-4 font-medium text-center w-16">
+                      번호
+                    </th>
+                    <th className="py-3 px-4 font-medium">학생명</th>
+                    <th className="py-3 px-4 font-medium">상담유형</th>
+                    <th className="py-3 px-4 font-medium">상담형태</th>
+                    <th className="py-3 px-4 font-medium">상담 내용</th>
+                    <th className="py-3 px-4 font-medium">
+                      상담일(상담예정일)
+                    </th>
+                    <th className="py-3 px-4 font-medium">상태</th>
+                    <th className="py-3 px-4 font-medium">관리</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {filteredRequests.length === 0 ? (
+                    <tr>
+                      <td
+                        colSpan={8}
+                        className="text-center py-10 text-gray-400"
+                      >
+                        상담 요청이 없습니다.
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredRequests.map((r, idx) => (
+                      <tr key={r.id} className="hover:bg-gray-50">
+                        <td className="py-3 px-4 text-center">
+                          {idx + 1}
+                        </td>
+                        <td className="py-3 px-4">{r.student_name}</td>
+                        <td className="py-3 px-4">
+                          {getTypeText(r.consultation_type)}
+                        </td>
+                        <td className="py-3 px-4">
+                          {r.method === 'OFFLINE' ? '대면상담' : '비대면상담'}
+                        </td>
+                        <td className="py-3 px-4">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              router.push(
+                                `/teacher/consultation/${r.id}`
+                              )
+                            }
+                            className="px-3 py-1 text-xs bg-white border border-sky-500 text-sky-600 rounded hover:bg-sky-50"
+                          >
+                            자세히 보기
+                          </button>
+                        </td>
+                        <td className="py-3 px-4 text-gray-700">
+                          {r.scheduled_at
+                            ? new Date(
+                                r.scheduled_at
+                              ).toLocaleString()
+                            : '-'}
+                        </td>
+                        <td className="py-3 px-4">
+                          <span
+                            className={`px-2 py-1 rounded text-xs font-bold ${
+                              r.status === 'PENDING'
+                                ? 'bg-yellow-100 text-yellow-700'
+                                : r.status === 'APPROVED'
+                                ? 'bg-blue-100 text-blue-700'
+                                : r.status === 'COMPLETED'
+                                ? 'bg-green-100 text-green-700'
+                                : 'bg-gray-100 text-gray-700'
+                            }`}
+                          >
+                            {getStatusText(r.status)}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4">
+                          {/* 관리 드롭다운 - 승인/거절/완료 */}
+                          <select
+                            defaultValue=""
+                            onChange={(e) => {
+                              const value = e.target.value as
+                                | 'APPROVED'
+                                | 'CANCELED'
+                                | 'COMPLETED'
+                                | '';
+                              if (!value) return;
+                              handleStatusChange(r.id, value);
+                              e.target.value = '';
+                            }}
+                            className="border border-gray-300 rounded px-2 py-1 text-xs"
+                          >
+                            <option value="">관리</option>
+                            {r.status !== 'APPROVED' && (
+                              <option value="APPROVED">승인</option>
+                            )}
+                            {r.status !== 'CANCELED' && (
+                              <option value="CANCELED">거절</option>
+                            )}
+                            {r.status === 'APPROVED' && (
+                              <option value="COMPLETED">상담완료</option>
+                            )}
+                          </select>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* 탭 2 : 일정관리 (달력) */}
+      {activeTab === 'calendar' && (
+        <div className="bg-white rounded-b-lg border border-gray-200 p-6 shadow-sm min-h-[500px]">
+          {/* 달력 상단 : 월 변경 */}
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
               <button
                 type="button"
-                className={`px-6 py-2 text-sm font-semibold border-t border-x rounded-t-md
-                  ${
-                    activeTab === 'request'
-                      ? 'bg-sky-600 text-white border-sky-600'
-                      : 'bg-gray-50 text-gray-500 border-gray-200 hover:bg-gray-100'
-                  }`}
-                onClick={() => setActiveTab('request')}
+                onClick={() => changeMonth(-1)}
+                className="px-3 py-1 border rounded hover:bg-gray-50"
               >
-                상담 신청
+                ◀
               </button>
               <button
                 type="button"
-                className={`px-6 py-2 text-sm font-semibold border-t border-x rounded-t-md
-                  ${
-                    activeTab === 'schedule'
-                      ? 'bg-sky-600 text-white border-sky-600'
-                      : 'bg-gray-50 text-gray-500 border-gray-200 hover:bg-gray-100'
-                  }`}
-                onClick={() => setActiveTab('schedule')}
+                onClick={() => changeMonth(1)}
+                className="px-3 py-1 border rounded hover:bg-gray-50"
               >
-                상담 일정
+                ▶
               </button>
-              <button
-                type="button"
-                className={`px-6 py-2 text-sm font-semibold border-t border-x rounded-t-md
-                  ${
-                    activeTab === 'history'
-                      ? 'bg-sky-600 text-white border-sky-600'
-                      : 'bg-gray-50 text-gray-500 border-gray-200 hover:bg-gray-100'
-                  }`}
-                onClick={() => setActiveTab('history')}
-              >
-                상담 내역
-              </button>
+              <span className="ml-4 font-bold text-gray-800">
+                {year}년 {month + 1}월
+              </span>
             </div>
           </div>
 
-          {/* 본문 */}
-          <div className="px-8 py-6">
-            {loading && (
-              <div className="py-8 text-center text-sm text-gray-500">
-                상담 정보를 불러오는 중입니다...
-              </div>
-            )}
-            {!loading && error && (
-              <div className="py-8 text-center text-sm text-red-500">
-                {error}
-              </div>
-            )}
+          {/* 요일 헤더 */}
+          <div className="grid grid-cols-7 text-center text-xs font-bold text-gray-600 border-b mb-2">
+            <div className="py-2">일</div>
+            <div className="py-2">월</div>
+            <div className="py-2">화</div>
+            <div className="py-2">수</div>
+            <div className="py-2">목</div>
+            <div className="py-2">금</div>
+            <div className="py-2">토</div>
+          </div>
 
-            {!loading && !error && (
-              <>
-                {/* 상담 신청 탭 */}
-                {activeTab === 'request' && (
-                  <section>
-                    <h3 className="text-sm font-semibold text-sky-700 mb-3">
-                      상담 신청 목록
-                    </h3>
-                    <div className="border border-gray-300 rounded-md overflow-hidden">
-                      <table className="w-full text-center text-sm">
-                        <thead className="bg-gray-100">
-                          <tr>
-                            <th className="px-3 py-2 border">번호</th>
-                            <th className="px-3 py-2 border">학생명</th>
-                            <th className="px-3 py-2 border">상담유형</th>
-                            <th className="px-3 py-2 border">요약</th>
-                            <th className="px-3 py-2 border">희망일시</th>
-                            <th className="px-3 py-2 border">상태</th>
-                            <th className="px-3 py-2 border">처리</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {requests.length === 0 ? (
-                            <tr>
-                              <td colSpan={7} className="px-3 py-6 text-gray-500">
-                                상담 신청이 없습니다.
-                              </td>
-                            </tr>
-                          ) : (
-                            requests.map((req, idx) => (
-                              <tr
-                                key={req.id}
-                                className="hover:bg-gray-50 cursor-pointer"
-                                onClick={() => handleViewDetail(req.id)}
-                              >
-                                <td className="px-3 py-2 border">{idx + 1}</td>
-                                <td className="px-3 py-2 border">
-                                  {req.student_name}
-                                </td>
-                                <td className="px-3 py-2 border">
-                                  {req.counsel_type}
-                                </td>
-                                <td className="px-3 py-2 border text-left">
-                                  {req.summary}
-                                </td>
-                                <td className="px-3 py-2 border">
-                                  {req.datetime}
-                                </td>
-                                <td className="px-3 py-2 border">
-                                  {getStatusLabel(req.status)}
-                                </td>
-                                <td
-                                  className="px-3 py-2 border"
-                                  onClick={(e) => e.stopPropagation()}
-                                >
-                                  <div className="flex gap-1 justify-center">
-                                    {req.status === 'PENDING' && (
-                                      <>
-                                        <button
-                                          type="button"
-                                          className="px-3 py-1 text-xs rounded bg-sky-600 text-white hover:bg-sky-700"
-                                          onClick={() => handleApprove(req.id)}
-                                        >
-                                          승인
-                                        </button>
-                                        <button
-                                          type="button"
-                                          className="px-3 py-1 text-xs rounded bg-white border border-gray-400 text-gray-600 hover:bg-gray-50"
-                                          onClick={() => handleReject(req.id)}
-                                        >
-                                          거절
-                                        </button>
-                                      </>
-                                    )}
-                                    {(req.status === 'APPROVED' ||
-                                      req.status === 'PENDING') && (
-                                      <button
-                                        type="button"
-                                        className="px-3 py-1 text-xs rounded bg-white border border-sky-600 text-sky-700 hover:bg-sky-50"
-                                        onClick={() => handleDone(req.id)}
-                                      >
-                                        완료 처리
-                                      </button>
-                                    )}
-                                  </div>
-                                </td>
-                              </tr>
-                            ))
-                          )}
-                        </tbody>
-                      </table>
-                    </div>
-                  </section>
-                )}
+          {/* 날짜 셀 */}
+          <div className="grid grid-cols-7 gap-px bg-gray-200 text-xs">
+            {calendarCells.map((day, idx) => {
+              if (day === null) {
+                return (
+                  <div
+                    key={idx}
+                    className="bg-white h-24 border border-gray-100"
+                  />
+                );
+              }
 
-                {/* 상담 일정 탭 */}
-                {activeTab === 'schedule' && (
-                  <section>
-                    <h3 className="text-sm font-semibold text-sky-700 mb-3">
-                      예정된 상담 일정
-                    </h3>
-                    <div className="border border-gray-300 rounded-md overflow-hidden">
-                      <table className="w-full text-center text-sm">
-                        <thead className="bg-gray-100">
-                          <tr>
-                            <th className="px-3 py-2 border">번호</th>
-                            <th className="px-3 py-2 border">제목</th>
-                            <th className="px-3 py-2 border">학생명</th>
-                            <th className="px-3 py-2 border">일시</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {schedules.length === 0 ? (
-                            <tr>
-                              <td colSpan={4} className="px-3 py-6 text-gray-500">
-                                예정된 상담 일정이 없습니다.
-                              </td>
-                            </tr>
-                          ) : (
-                            schedules.map((s, idx) => (
-                              <tr key={s.id} className="hover:bg-gray-50">
-                                <td className="px-3 py-2 border">{idx + 1}</td>
-                                <td className="px-3 py-2 border text-left">
-                                  {s.title}
-                                </td>
-                                <td className="px-3 py-2 border">
-                                  {s.student_name}
-                                </td>
-                                <td className="px-3 py-2 border">
-                                  {s.datetime}
-                                </td>
-                              </tr>
-                            ))
-                          )}
-                        </tbody>
-                      </table>
-                    </div>
-                  </section>
-                )}
+              const events = getEventsForDate(day);
 
-                {/* 상담 내역 탭 */}
-                {activeTab === 'history' && (
-                  <section>
-                    <h3 className="text-sm font-semibold text-sky-700 mb-3">
-                      상담 진행 내역
-                    </h3>
-                    <div className="border border-gray-300 rounded-md overflow-hidden">
-                      <table className="w-full text-center text-sm">
-                        <thead className="bg-gray-100">
-                          <tr>
-                            <th className="px-3 py-2 border">번호</th>
-                            <th className="px-3 py-2 border">학생명</th>
-                            <th className="px-3 py-2 border">상담유형</th>
-                            <th className="px-3 py-2 border">일시</th>
-                            <th className="px-3 py-2 border">결과</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {historyList.length === 0 ? (
-                            <tr>
-                              <td colSpan={5} className="px-3 py-6 text-gray-500">
-                                상담 내역이 없습니다.
-                              </td>
-                            </tr>
-                          ) : (
-                            historyList.map((h, idx) => (
-                              <tr key={h.id} className="hover:bg-gray-50">
-                                <td className="px-3 py-2 border">{idx + 1}</td>
-                                <td className="px-3 py-2 border">
-                                  {h.student_name}
-                                </td>
-                                <td className="px-3 py-2 border">
-                                  {h.counsel_type}
-                                </td>
-                                <td className="px-3 py-2 border">
-                                  {h.datetime}
-                                </td>
-                                <td className="px-3 py-2 border text-left">
-                                  {h.result}
-                                </td>
-                              </tr>
-                            ))
-                          )}
-                        </tbody>
-                      </table>
-                    </div>
-                  </section>
-                )}
-              </>
-            )}
+              return (
+                <div
+                  key={idx}
+                  className="bg-white h-24 border border-gray-100 p-1 flex flex-col"
+                >
+                  <div className="text-right text-[11px] text-gray-700 mb-1">
+                    {day}
+                  </div>
+
+                  <div className="flex-1 overflow-hidden space-y-1">
+                    {events.map((e, i) => (
+                      <div
+                        key={i}
+                        className="text-[10px] leading-tight bg-sky-100 text-sky-800 rounded px-1 py-0.5 cursor-pointer hover:bg-sky-200"
+                        onClick={() =>
+                          router.push(`/teacher/consultation/${e.id}`)
+                        }
+                      >
+                        {new Date(e.scheduled_at || '').toLocaleTimeString(
+                          [],
+                          { hour: '2-digit', minute: '2-digit' }
+                        )}{' '}
+                        · {e.student_name}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
