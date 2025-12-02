@@ -24,11 +24,11 @@ export default function Navbar() {
         try {
             const parsedUser = JSON.parse(userData);
 
-            // 이름 표시
+            // 이름 표시 (last_name + first_name, 없으면 username)
             const fullName = `${parsedUser.last_name || ''}${parsedUser.first_name || ''}`;
             setUser(fullName.trim() ? fullName : parsedUser.username);
 
-            // role 정규화 (숫자/문자 둘 다 올 수 있음)
+            // role 정규화 (숫자 / 숫자 문자열 / 문자열 역할 이름 다 처리)
             const rawRole = parsedUser.role as number | string | null | undefined;
 
             let numericRole: number | null = null;
@@ -44,7 +44,7 @@ export default function Navbar() {
                     : null;
 
             const isTeacher =
-                numericRole === 2 || // 2 = Instructor
+                numericRole === 2 ||          // 2 = Instructor (강사)
                 stringRole === 'TEACHER' ||
                 stringRole === 'INSTRUCTOR';
 
@@ -72,7 +72,7 @@ export default function Navbar() {
         router.push('/login');
     };
 
-    // ✅ 각 메뉴별 링크 경로 (student / teacher 분리)
+    // 각 메뉴별 링크 경로 (student / teacher 분기)
     const dashboardHref =
         role === 'teacher'
             ? '/teacher/dashboard'
@@ -94,7 +94,6 @@ export default function Navbar() {
             ? '/student/consultation'
             : '/login';
 
-    // teacher 쪽 mypage 폴더 아직 없으면 나중에 만들거나 경로 바꿔도 됨
     const mypageHref =
         role === 'teacher'
             ? '/teacher/mypage'
@@ -112,7 +111,12 @@ export default function Navbar() {
                         onClick={() => router.push('/')}
                     >
                         <div className="font-bold text-2xl tracking-wide flex items-center gap-1">
-                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg
+                                className="w-6 h-6"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
                                 <path
                                     strokeLinecap="round"
                                     strokeLinejoin="round"
