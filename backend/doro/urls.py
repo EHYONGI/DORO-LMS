@@ -1,59 +1,89 @@
 # backend/doro/urls.py
+
 from django.contrib import admin
 from django.urls import path, include
-from django.http import HttpResponse
+from django.http import HttpResponse  # ← 반드시 필요!!
 
-# 각 앱의 view 함수들을 직접 import
-from lecture import views as lecture_views
-from notice import views as notice_views
-from community import views as community_views
 from user import views as user_views
+from notice import views as notice_views
+from lecture import views as lecture_views
+from consultations import views as consult_views
+
 
 urlpatterns = [
-    # 테스트용 핑 엔드포인트 (URLConf가 맞게 로딩되는지 확인용)
+    # ================================
+    # 0. 기본 테스트용 엔드포인트
+    # ================================
     path("ping/", lambda request: HttpResponse("pong")),
 
-    path('admin/', admin.site.urls),
 
-    # === 1. 대시보드 (Dashboard) API ===
+    # ================================
+    # 1. 대시보드 API
+    # ================================
+    # 대시보드: 내 강의 목록
     path('api/dashboard/my-courses/', lecture_views.my_course_list_api),
-    path('api/dashboard/notices/', notice_views.dashboard_notice_list_api),
-    path('api/dashboard/notices/<int:pk>/', notice_views.notice_detail_api),
+
+    # 대시보드: 내 할 일 목록(과제)
     path('api/dashboard/tasks/', lecture_views.my_task_list_api),
 
-    # === 2. 커뮤니티 (Community) API ===
-    path('api/community/', community_views.community_list_create_api),
-    path('api/community/<int:pk>/', community_views.community_detail_api),
-    path('api/community/<int:pk>/comments/', community_views.comment_create_api),
-    path('api/community/me/', community_views.my_activity_api),
+    # 대시보드: 시스템 + 강의 공지 통합 목록
+    path('api/dashboard/notices/', notice_views.dashboard_notice_list_api),
 
-    # === 3. 강의 내부 기능 (Lecture Specific) ===
-    path(
-        'api/lecture/<int:lecture_id>/notices/',
-        lecture_views.course_notice_list_api,
-    ),
-    path(
-        'api/lecture/notices/<int:pk>/',
-        lecture_views.lecture_notice_detail_api,
-    ),
-    # ✅ 우리가 쓰는 과제 목록/생성 API
-    path(
-        'api/lecture/<int:lecture_id>/assignments/',
-        lecture_views.course_assignment_list_api,
-    ),
-    path(
-        'api/lecture/<int:lecture_id>/attendance/',
-        lecture_views.my_attendance_api,
-    ),
+    # 대시보드 공지 상세 조회
+    path('api/dashboard/notices/<int:pk>/', notice_views.notice_detail_api),
 
-    # === 4. 유저 (User) API ===
+
+    # ================================
+    # 2. 강의(Lecture) 관련 API
+    # ================================
+    # 강의 상세 정보
+    path('api/lecture/<int:lecture_id>/', lecture_views.lecture_detail_api),
+
+    # 강의 공지 목록
+    path('api/lecture/<int:lecture_id>/notices/', lecture_views.course_notice_list_api),
+
+    # 강의 출결 (내 출결)
+    path('api/lecture/<int:lecture_id>/attendance/', lecture_views.my_attendance_api),
+
+    # 강사용 – 전체 학생 출결 조회
+    path('api/lecture/<int:lecture_id>/attendance/all/', lecture_views.attendance_all_students_api),
+
+    # 강사용 – 출결 업데이트
+    path('api/lecture/<int:lecture_id>/attendance/update/', lecture_views.attendance_update_api),
+
+    # 강의 과제 목록 (학생/강사)
+    path('api/lecture/<int:lecture_id>/assignments/', lecture_views.assignment_list_api),
+
+    # 과제 생성 (강사용)
+    path('api/lecture/<int:lecture_id>/assignments/create/', lecture_views.assignment_create_api),
+
+    # 과제 상세
+    path('api/lecture/<int:lecture_id>/assignments/<int:assignment_id>/', lecture_views.assignment_detail_api),
+
+    # 학생 과제 제출
+    path('api/lecture/<int:lecture_id>/assignments/<int:assignment_id>/submit/', lecture_views.assignment_submit_api),
+
+
+    # ================================
+    # 3. 상담(Consultation) API
+    # ================================
+    path('api/counseling/list/', consult_views.consultation_list_create_api),
+    path('api/counseling/create/', consult_views.consultation_list_create_api),
+    path('api/counseling/<int:pk>/', consult_views.consultation_detail_api),
+
+
+    # ================================
+    # 4. 사용자(User) API
+    # ================================
     path('api/user/signup/', user_views.signup_api),
     path('api/user/login/', user_views.login_api),
     path('api/user/logout/', user_views.logout_api),
     path('api/user/me/', user_views.user_profile_api),
 
-    # === 5. 상담(consultations) API ===
-    path('api/consultations/', include('consultations.urls')),
-    # 프론트에서 /api/counseling/... 을 쓰는 경우를 위한 별칭
-    path('api/counseling/', include('consultations.urls')),
+
+    # ================================
+    # 5. 시스템 공지(SystemNotice) API
+    # ================================
+    path('api/system-notices/', notice_views.system_notice_create_api),
+    path('api/system-notices/<int:pk>/', notice_views.system_notice_update_delete_api),
 ]
