@@ -2,213 +2,236 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 
-const API_BASE_URL = 'http://127.0.0.1:8000';
+type TopTab = 'profile' | 'manage';
 
-interface UserProfile {
-  id: number;
+const dummyImportantNotice =
+  '[필독] 1주차 수업 안내\n' +
+  '- 강의계획서를 반드시 확인해주세요.\n' +
+  '- 수업 일정 및 교재 변경 사항을 확인하시기 바랍니다.\n' +
+  '- 자세한 내용은 공지사항 게시판을 참고해주세요.';
+
+interface UserInfo {
   username: string;
-  first_name: string;
-  last_name: string;
-  email: string;
-  phone: string | null;
-  interests: string | null;
-  role: number | string | null;
+  first_name?: string;
+  last_name?: string;
+  email?: string;
+  phone?: string;
 }
 
-type ActiveTab = 'profile' | 'lecture';
+interface Course {
+  id: number;
+  name: string;
+  code: string;
+  teacher: string;
+}
+
+const dummyCourses: Course[] = [
+  { id: 1, name: '웹 프로그래밍 A반', code: 'WEB101', teacher: '홍길동' },
+  { id: 2, name: '파이썬 프로그래밍', code: 'PYT201', teacher: '이몽룡' },
+  { id: 3, name: '데이터 구조', code: 'CS301', teacher: '성춘향' },
+];
 
 export default function TeacherMyPage() {
-  const router = useRouter();
+  const [topTab, setTopTab] = useState<TopTab>('profile');
+  const [selectedCourseId, setSelectedCourseId] = useState(1);
+  const [user, setUser] = useState<UserInfo | null>(null);
 
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<ActiveTab>('profile');
-
-  // 프로필 정보 불러오기
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-
-    const token = localStorage.getItem('access_token');
-    if (!token) {
-      router.push('/login');
-      return;
+    const u = localStorage.getItem('user');
+    if (!u) return;
+    try {
+      setUser(JSON.parse(u));
+    } catch {
+      // ignore
     }
-
-    async function fetchProfile() {
-      try {
-        const res = await fetch(`${API_BASE_URL}/api/user/me/`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-
-        if (!res.ok) {
-          throw new Error('프로필 정보를 불러오지 못했습니다.');
-        }
-
-        const data: UserProfile = await res.json();
-        setProfile(data);
-      } catch (err: any) {
-        setError(err.message ?? '오류가 발생했습니다.');
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    fetchProfile();
-  }, [router]);
+  }, []);
 
   const fullName =
-    (profile?.last_name ?? '') + (profile?.first_name ?? '') ||
-    profile?.username ||
-    '';
+    (user?.last_name || '') + (user?.first_name || '') || user?.username || '';
 
-  // 직종 / 직위 / 담당업무는 임시 값
-  const jobType = profile?.interests ?? '';
-  const position = '';
-  const duty = '';
-
-  const handleEditClick = () => {
-    alert('프로필 수정 기능은 추후 추가 예정입니다 🙂');
-  };
-
-  const handleTabChange = (tab: ActiveTab) => {
-    if (tab === 'profile') {
-      setActiveTab('profile');
-    } else {
-      // 강의관리 탭 클릭 시 강사용 강의 관리 페이지로 이동
-      router.push('/teacher/course');
-    }
-  };
+  const selectedCourse =
+    dummyCourses.find((c) => c.id === selectedCourseId) ?? dummyCourses[0];
 
   return (
-    <div className="min-h-screen bg-gray-100 px-6 py-8">
-      <div className="max-w-7xl mx-auto bg-white rounded-lg shadow-sm border border-gray-200">
-        {/* 상단 제목 */}
-        <div className="px-8 pt-8 pb-4 border-b border-gray-200">
+    <div className="min-h-[calc(100vh-80px)] bg-gray-100 px-6 py-8">
+      {/* 중앙 흰색 카드 (수강신청 / 대시보드와 톤 맞춤) */}
+      <div className="max-w-6xl mx-auto bg-white rounded-lg shadow-sm border border-gray-200">
+        {/* 제목 + 설명 */}
+        <div className="px-8 pt-6 pb-4 border-b border-gray-200">
           <h1 className="text-2xl font-bold text-sky-800">마이페이지</h1>
-          <p className="mt-1 text-sm text-gray-500">
-            강사 정보를 확인하고 프로필을 관리하는 페이지입니다.
+          <p className="text-sm text-gray-500 mt-1">
+            강사 정보를 확인하고 프로필 및 수업 정보를 관리할 수 있습니다.
           </p>
         </div>
 
-        {/* 탭 영역 – 상담페이지와 동일 느낌 */}
+        {/* 상단 탭 (수강신청 / 상담 / 대시보드와 동일 스타일) */}
         <div className="px-8 pt-4 border-b border-gray-200">
-          <div className="flex gap-2">
+          <div className="flex gap-2 mb-1">
             <button
-              type="button"
-              onClick={() => handleTabChange('profile')}
-              className={`px-6 py-2 rounded-t-lg font-semibold text-sm border
-                ${
-                  activeTab === 'profile'
-                    ? 'bg-sky-600 text-white border-sky-600 border-b-white'
-                    : 'bg-white text-gray-500 border-gray-300 hover:bg-gray-50'
-                }`}
+              onClick={() => setTopTab('profile')}
+              className={`px-6 py-2 text-sm font-bold rounded-t-lg border-t border-l border-r
+              ${
+                topTab === 'profile'
+                  ? 'bg-sky-600 text-white border-sky-600'
+                  : 'bg-gray-50 text-gray-500 border-gray-200 hover:bg-gray-100'
+              }`}
             >
               프로필 관리
             </button>
+
             <button
-              type="button"
-              onClick={() => handleTabChange('lecture')}
-              className={`px-6 py-2 rounded-t-lg font-semibold text-sm border
-                ${
-                  activeTab === 'lecture'
-                    ? 'bg-sky-600 text-white border-sky-600 border-b-white'
-                    : 'bg-white text-gray-500 border-gray-300 hover:bg-gray-50'
-                }`}
+              onClick={() => setTopTab('manage')}
+              className={`px-6 py-2 text-sm font-bold rounded-t-lg border-t border-l border-r
+              ${
+                topTab === 'manage'
+                  ? 'bg-sky-600 text-white border-sky-600'
+                  : 'bg-gray-50 text-gray-500 border-gray-200 hover:bg-gray-100'
+              }`}
             >
               강의 관리
             </button>
           </div>
         </div>
 
-        {/* 컨텐츠 영역 */}
+        {/* 탭 내용 */}
         <div className="px-8 py-6">
-          {loading && (
-            <p className="text-sm text-gray-500">
-              프로필 정보를 불러오는 중입니다…
-            </p>
-          )}
+          {/* ▶ 프로필 관리 */}
+          {topTab === 'profile' && (
+            <div className="grid grid-cols-3 gap-8">
+              {/* 왼쪽 프로필 박스 */}
+              <div className="col-span-1 border rounded-lg p-6 text-center bg-gray-50">
+                <div className="w-24 h-24 rounded-full bg-gray-300 mx-auto mb-4" />
+                <p className="font-semibold text-gray-800">
+                  {fullName || '-'}
+                </p>
+                <p className="text-sm text-gray-500">전공분야</p>
 
-          {!loading && error && (
-            <p className="text-sm text-red-500">{error}</p>
-          )}
-
-          {!loading && !error && profile && (
-            <section className="border border-gray-200 rounded-md bg-white px-6 py-5">
-              {/* 내 프로필 제목 + 수정 버튼 */}
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-lg font-semibold text-gray-800">내 프로필</h2>
-                <button
-                  type="button"
-                  onClick={handleEditClick}
-                  className="px-4 py-1.5 text-sm bg-gray-100 border border-gray-300 rounded shadow hover:bg-gray-200"
-                >
-                  수정하기
+                <button className="mt-4 w-full bg-sky-600 text-white text-sm py-2 rounded-lg hover:bg-sky-700">
+                  프로필 수정
                 </button>
-              </div>
 
-              <div className="flex gap-8">
-                {/* 왼쪽 프로필 이미지 자리 */}
-                <div className="flex-shrink-0">
-                  <div className="w-32 h-32 rounded-md border border-gray-300 bg-gray-100 flex items-center justify-center">
-                    <div className="w-16 h-16 rounded-full bg-gray-300" />
+                <div className="text-left text-sm mt-6 space-y-3">
+                  <div>
+                    <p className="font-medium text-gray-600">강의 수</p>
+                    <input
+                      value={`${dummyCourses.length} 개`}
+                      className="w-full mt-1 p-2 border rounded bg-gray-100"
+                      readOnly
+                    />
+                  </div>
+                  <div>
+                    <p className="font-medium text-gray-600">상태</p>
+                    <input
+                      value="활동 중"
+                      className="w-full mt-1 p-2 border rounded bg-gray-100"
+                      readOnly
+                    />
+                  </div>
+                  <div>
+                    <p className="font-medium text-gray-600">메모</p>
+                    <textarea
+                      placeholder="자기소개 / 한 줄 메모"
+                      className="w-full mt-1 p-2 border rounded h-20"
+                    />
                   </div>
                 </div>
+              </div>
 
-                {/* 오른쪽 정보 테이블 */}
-                <div className="flex-1 space-y-4">
-                  {/* 이름 / 직종 / 직위 */}
-                  <table className="w-full border border-gray-300 text-sm">
-                    <tbody>
-                      <tr className="border-b border-gray-300">
-                        <th className="w-24 bg-gray-50 px-3 py-2 text-left font-medium">
-                          성명
-                        </th>
-                        <td className="px-3 py-2">{fullName}</td>
-                      </tr>
-                      <tr className="border-b border-gray-300">
-                        <th className="bg-gray-50 px-3 py-2 text-left font-medium">
-                          직종
-                        </th>
-                        <td className="px-3 py-2">{jobType}</td>
-                      </tr>
-                      <tr>
-                        <th className="bg-gray-50 px-3 py-2 text-left font-medium">
-                          직위
-                        </th>
-                        <td className="px-3 py-2">{position}</td>
-                      </tr>
-                    </tbody>
-                  </table>
+              {/* 오른쪽 정보 테이블 */}
+              <div className="col-span-2">
+                <h2 className="text-lg font-bold mb-4">내 정보</h2>
 
-                  {/* 이메일 / 전화번호 / 담당업무 */}
-                  <table className="w-full border border-gray-300 text-sm">
-                    <tbody>
-                      <tr className="border-b border-gray-300">
-                        <th className="w-24 bg-gray-50 px-3 py-2 text-left font-medium">
-                          이메일
-                        </th>
-                        <td className="px-3 py-2">{profile.email}</td>
-                      </tr>
-                      <tr className="border-b border-gray-300">
-                        <th className="bg-gray-50 px-3 py-2 text-left font-medium">
-                          전화번호
-                        </th>
-                        <td className="px-3 py-2">{profile.phone ?? ''}</td>
-                      </tr>
-                      <tr>
-                        <th className="bg-gray-50 px-3 py-2 text-left font-medium">
-                          담당업무
-                        </th>
-                        <td className="px-3 py-2">{duty}</td>
-                      </tr>
-                    </tbody>
-                  </table>
+                <table className="w-full text-sm border-t border-gray-200">
+                  <tbody>
+                    <tr className="border-b">
+                      <th className="w-32 bg-gray-50 px-4 py-3 text-left font-medium text-gray-600">
+                        이름
+                      </th>
+                      <td className="px-4 py-3">{fullName || '-'}</td>
+                    </tr>
+                    <tr className="border-b">
+                      <th className="bg-gray-50 px-4 py-3 text-left font-medium text-gray-600">
+                        이메일
+                      </th>
+                      <td className="px-4 py-3">{user?.email || '-'}</td>
+                    </tr>
+                    <tr className="border-b">
+                      <th className="bg-gray-50 px-4 py-3 text-left font-medium text-gray-600">
+                        전화번호
+                      </th>
+                      <td className="px-4 py-3">{user?.phone || '-'}</td>
+                    </tr>
+                    <tr>
+                      <th className="bg-gray-50 px-4 py-3 text-left font-medium text-gray-600">
+                        담당업무
+                      </th>
+                      <td className="px-4 py-3">-</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* ▶ 강의 관리 */}
+          {topTab === 'manage' && (
+            <div className="grid grid-cols-2 gap-8">
+              {/* 왼쪽: 내 강좌 리스트 */}
+              <div>
+                <h2 className="text-lg font-bold mb-4">내 강좌</h2>
+
+                <div className="space-y-3">
+                  {dummyCourses.map((course) => (
+                    <button
+                      key={course.id}
+                      onClick={() => setSelectedCourseId(course.id)}
+                      className={`w-full flex items-center justify-between border rounded-lg px-4 py-3 shadow-sm
+                        ${
+                          selectedCourseId === course.id
+                            ? 'border-sky-500 bg-sky-50'
+                            : 'border-gray-200 bg-white hover:bg-gray-50'
+                        }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-gray-200" />
+                        <div>
+                          <p className="font-semibold text-sm">{course.name}</p>
+                          <p className="text-xs text-gray-500">
+                            {course.teacher} • {course.code}
+                          </p>
+                        </div>
+                      </div>
+                      <span className="text-xs text-gray-400">···</span>
+                    </button>
+                  ))}
                 </div>
               </div>
-            </section>
+
+              {/* 오른쪽: 중요 공지 */}
+              <div>
+                <h2 className="text-lg font-bold mb-4">중요 공지</h2>
+
+                <div className="border rounded-lg p-4 bg-gray-50 text-sm whitespace-pre-line">
+                  {dummyImportantNotice}
+                </div>
+
+                <p className="mt-2 text-right text-xs text-gray-400 cursor-pointer hover:underline">
+                  더보기 &gt;
+                </p>
+
+                {/* 선택된 과목 정보 한 줄 정도 붙여줘도 UX 좋음 */}
+                <div className="mt-6 text-sm text-gray-600">
+                  <p className="font-semibold mb-1">선택한 과목</p>
+                  <div className="border rounded-lg px-3 py-2 bg-white">
+                    <p className="font-medium text-sm">{selectedCourse.name}</p>
+                    <p className="text-xs text-gray-500">
+                      {selectedCourse.teacher} • {selectedCourse.code}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
           )}
         </div>
       </div>

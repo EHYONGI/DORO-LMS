@@ -87,18 +87,15 @@ export default function TeacherDashboardPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // 🔐 강사 가드용 상태
   const [authChecked, setAuthChecked] = useState(false);
   const [authorized, setAuthorized] = useState(false);
 
-  // 탭 상태 (URL ?tab=... 과 연동)
   const tabParam = searchParams.get('tab') as TopTab | null;
   const [topTab, setTopTab] = useState<TopTab>(tabParam || 'manage');
 
-  // 선택된 과목
   const [selectedCourseId, setSelectedCourseId] = useState<number>(1);
 
-  // 🔐 강사 전용 가드
+  // 강사 전용 가드
   useEffect(() => {
     try {
       const userStr = localStorage.getItem('user');
@@ -164,7 +161,6 @@ export default function TeacherDashboardPage() {
     return 'bg-blue-100 text-blue-700';
   };
 
-  // 여기부터는 훅 다 실행된 이후에 조건부 렌더링이라 안전함
   if (!authChecked) {
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
@@ -174,306 +170,382 @@ export default function TeacherDashboardPage() {
   }
 
   if (!authorized) {
-    // 이미 router.replace 로 리다이렉트 중
     return null;
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      <div className="max-w-7xl mx-auto py-10 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-[calc(100vh-80px)] bg-gray-100 px-6 py-8">
+      <div className="max-w-7xl mx-auto">
+        {/* 가운데 흰 카드 전체 래퍼 */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+          {/* 상단 제목 영역 */}
+          <div className="px-8 pt-6 pb-4 border-b border-gray-200">
+            <h1 className="text-2xl font-bold text-sky-800">강사 대시보드</h1>
+            <p className="mt-1 text-sm text-gray-500">
+              내 강좌, 공지사항, 학생 커뮤니티, 출결 현황을 한눈에 관리할 수 있습니다.
+            </p>
+          </div>
 
-        {/* 상단 탭 */}
-        <div className="flex gap-2 mb-6 border-b border-gray-300 pb-1">
-          <button
-            onClick={() => handleChangeTab('manage')}
-            className={`px-6 py-2 rounded-t-lg font-bold text-sm border-t border-l border-r transition
-            ${topTab === 'manage'
-              ? 'bg-sky-600 text-white border-sky-600'
-              : 'bg-white text-gray-500 border-gray-300 hover:bg-gray-50'
-            }`}
-          >
-            강의관리
-          </button>
-
-          <button
-            onClick={() => handleChangeTab('notice')}
-            className={`px-6 py-2 rounded-t-lg font-bold text-sm border-t border-l border-r transition
-            ${topTab === 'notice'
-              ? 'bg-sky-600 text-white border-sky-600'
-              : 'bg-white text-gray-500 border-gray-300 hover:bg-gray-50'
-            }`}
-          >
-            공지 확인
-          </button>
-
-          <button
-            onClick={() => handleChangeTab('community')}
-            className={`px-6 py-2 rounded-t-lg font-bold text-sm border-t border-l border-r transition
-            ${topTab === 'community'
-              ? 'bg-sky-600 text-white border-sky-600'
-              : 'bg-white text-gray-500 border-gray-300 hover:bg-gray-50'
-            }`}
-          >
-            학생 커뮤니티
-          </button>
-
-          <button
-            onClick={() => handleChangeTab('attendance')}
-            className={`px-6 py-2 rounded-t-lg font-bold text-sm border-t border-l border-r transition
-            ${topTab === 'attendance'
-              ? 'bg-sky-600 text-white border-sky-600'
-              : 'bg-white text-gray-500 border-gray-300 hover:bg-gray-50'
-            }`}
-          >
-            출결 확인
-          </button>
-        </div>
-
-        {/* 메인 컨테이너 */}
-        <div className="bg-white rounded-b-lg border border-gray-200 shadow-sm min-h-[520px] flex">
-
-          {/* 사이드바 */}
-          <aside className="w-52 border-r border-gray-200 p-5 text-sm">
-            <h2 className="text-lg font-bold mb-4">대시보드</h2>
-
-            <div className="mb-4">
-              <p className="text-xs text-gray-500 mb-1">과목 선택</p>
-              <select
-                value={selectedCourseId}
-                onChange={(e) => setSelectedCourseId(Number(e.target.value))}
-                className="w-full border border-gray-300 rounded px-2 py-1 text-sm focus:border-sky-500"
+          {/* 상단 탭 (카드 안쪽) */}
+          <div className="px-8 pt-4 border-b border-gray-200">
+            <div className="flex gap-2 mb-1">
+              <button
+                onClick={() => handleChangeTab('manage')}
+                className={`px-6 py-2 rounded-t-lg font-bold text-sm border-t border-l border-r transition
+                ${
+                  topTab === 'manage'
+                    ? 'bg-sky-600 text-white border-sky-600'
+                    : 'bg-gray-50 text-gray-500 border-gray-200 hover:bg-gray-100'
+                }`}
               >
-                {dummyCourses.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name} ({c.code})
-                  </option>
-                ))}
-              </select>
+                강의관리
+              </button>
+
+              <button
+                onClick={() => handleChangeTab('notice')}
+                className={`px-6 py-2 rounded-t-lg font-bold text-sm border-t border-l border-r transition
+                ${
+                  topTab === 'notice'
+                    ? 'bg-sky-600 text-white border-sky-600'
+                    : 'bg-gray-50 text-gray-500 border-gray-200 hover:bg-gray-100'
+                }`}
+              >
+                공지 확인
+              </button>
+
+              <button
+                onClick={() => handleChangeTab('community')}
+                className={`px-6 py-2 rounded-t-lg font-bold text-sm border-t border-l border-r transition
+                ${
+                  topTab === 'community'
+                    ? 'bg-sky-600 text-white border-sky-600'
+                    : 'bg-gray-50 text-gray-500 border-gray-200 hover:bg-gray-100'
+                }`}
+              >
+                학생 커뮤니티
+              </button>
+
+              <button
+                onClick={() => handleChangeTab('attendance')}
+                className={`px-6 py-2 rounded-t-lg font-bold text-sm border-t border-l border-r transition
+                ${
+                  topTab === 'attendance'
+                    ? 'bg-sky-600 text-white border-sky-600'
+                    : 'bg-gray-50 text-gray-500 border-gray-200 hover:bg-gray-100'
+                }`}
+              >
+                출결 확인
+              </button>
             </div>
+          </div>
 
-            <p className="text-xs text-gray-500 mb-1 mt-6">메뉴</p>
-            <ul className="space-y-1 text-sm">
-              <li>
-                <button className="pl-2 hover:underline" onClick={() => handleChangeTab('manage')}>
-                  • 강의 관리
-                </button>
-              </li>
-              <li>
-                <button className="pl-2 hover:underline" onClick={() => handleChangeTab('notice')}>
-                  • 공지사항
-                </button>
-              </li>
-              <li>
-                <button className="pl-2 hover:underline" onClick={() => handleChangeTab('community')}>
-                  • 학생 커뮤니티
-                </button>
-              </li>
-              <li>
-                <button
-                  className="pl-2 hover:underline"
-                  onClick={() => router.push(`/teacher/assignment?course=${selectedCourseId}`)}
-                >
-                  • 과제
-                </button>
-              </li>
-              <li>
-                <button className="pl-2 hover:underline" onClick={() => handleChangeTab('attendance')}>
-                  • 출결 현황
-                </button>
-              </li>
-            </ul>
-          </aside>
+          {/* 메인 컨텐츠 영역 */}
+          <div className="px-8 py-6">
+            <div className="min-h-[460px] flex">
+              {/* 사이드바 */}
+              <aside className="w-52 border-r border-gray-200 p-5 text-sm">
+                <h2 className="text-lg font-bold mb-4">대시보드</h2>
 
-          {/* 우측 메인 */}
-          <main className="flex-1 p-6">
-
-            {/* ▷ 강의관리 */}
-            {topTab === 'manage' && (
-              <div className="h-full flex gap-6">
-
-                <div className="w-1/2 border-r border-gray-200 pr-4">
-                  <h3 className="text-base font-bold mb-3">내 강좌</h3>
-
-                  <div className="space-y-3">
-                    {dummyCourses.map((course) => (
-                      <button
-                        key={course.id}
-                        onClick={() => setSelectedCourseId(course.id)}
-                        className={`w-full flex items-center justify-between border rounded-lg px-4 py-3 shadow-sm
-                        ${selectedCourseId === course.id
-                          ? 'border-sky-500 bg-sky-50'
-                          : 'border-gray-200 bg-white hover:bg-gray-50'
-                        }`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full bg-gray-200" />
-                          <div>
-                            <p className="font-semibold text-sm">{course.name}</p>
-                            <p className="text-xs text-gray-500">
-                              {course.teacher} • {course.code}
-                            </p>
-                          </div>
-                        </div>
-                        <span className="text-xs text-gray-400">···</span>
-                      </button>
+                <div className="mb-4">
+                  <p className="text-xs text-gray-500 mb-1">과목 선택</p>
+                  <select
+                    value={selectedCourseId}
+                    onChange={(e) => setSelectedCourseId(Number(e.target.value))}
+                    className="w-full border border-gray-300 rounded px-2 py-1 text-sm focus:border-sky-500"
+                  >
+                    {dummyCourses.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name} ({c.code})
+                      </option>
                     ))}
+                  </select>
+                </div>
+
+                <p className="text-xs text-gray-500 mb-1 mt-6">메뉴</p>
+                <ul className="space-y-1 text-sm">
+                  <li>
+                    <button
+                      className="pl-2 hover:underline"
+                      onClick={() => handleChangeTab('manage')}
+                    >
+                      • 강의 관리
+                    </button>
+                  </li>
+                  <li>
+                    <button
+                      className="pl-2 hover:underline"
+                      onClick={() => handleChangeTab('notice')}
+                    >
+                      • 공지사항
+                    </button>
+                  </li>
+                  <li>
+                    <button
+                      className="pl-2 hover:underline"
+                      onClick={() => handleChangeTab('community')}
+                    >
+                      • 학생 커뮤니티
+                    </button>
+                  </li>
+                  <li>
+                    <button
+                      className="pl-2 hover:underline"
+                      onClick={() =>
+                        router.push(`/teacher/assignment?course=${selectedCourseId}`)
+                      }
+                    >
+                      • 과제
+                    </button>
+                  </li>
+                  <li>
+                    <button
+                      className="pl-2 hover:underline"
+                      onClick={() => handleChangeTab('attendance')}
+                    >
+                      • 출결 현황
+                    </button>
+                  </li>
+                </ul>
+              </aside>
+
+              {/* 우측 메인 */}
+              <main className="flex-1 p-6">
+                {/* ▷ 강의관리 */}
+                {topTab === 'manage' && (
+                  <div className="h-full flex gap-6">
+                    <div className="w-1/2 border-r border-gray-200 pr-4">
+                      <h3 className="text-base font-bold mb-3">내 강좌</h3>
+
+                      <div className="space-y-3">
+                        {dummyCourses.map((course) => (
+                          <button
+                            key={course.id}
+                            onClick={() => setSelectedCourseId(course.id)}
+                            className={`w-full flex items-center justify-between border rounded-lg px-4 py-3 shadow-sm
+                            ${
+                              selectedCourseId === course.id
+                                ? 'border-sky-500 bg-sky-50'
+                                : 'border-gray-200 bg-white hover:bg-gray-50'
+                            }`}
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-full bg-gray-200" />
+                              <div>
+                                <p className="font-semibold text-sm">
+                                  {course.name}
+                                </p>
+                                <p className="text-xs text-gray-500">
+                                  {course.teacher} • {course.code}
+                                </p>
+                              </div>
+                            </div>
+                            <span className="text-xs text-gray-400">···</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="w-1/2 pl-2">
+                      <h3 className="text-base font-bold mb-3">중요 공지</h3>
+                      <div className="border rounded-lg p-4 bg-gray-50 text-sm whitespace-pre-line">
+                        {dummyImportantNotice}
+                      </div>
+                      <div className="mt-2 text-right text-xs text-gray-400">
+                        더보기 &gt;
+                      </div>
+                    </div>
                   </div>
-                </div>
+                )}
 
-                <div className="w-1/2 pl-2">
-                  <h3 className="text-base font-bold mb-3">중요 공지</h3>
-                  <div className="border rounded-lg p-4 bg-gray-50 text-sm whitespace-pre-line">
-                    {dummyImportantNotice}
-                  </div>
-                  <div className="mt-2 text-right text-xs text-gray-400">더보기 &gt;</div>
-                </div>
-              </div>
-            )}
+                {/* ▷ 공지 확인 */}
+                {topTab === 'notice' && (
+                  <div className="h-full flex flex-col">
+                    <div className="flex justify-between items-center mb-4">
+                      <div>
+                        <h3 className="text-base font-bold mb-1">과목별 공지</h3>
+                        <p className="text-xs text-gray-500">
+                          선택한 과목 : {selectedCourse.name}
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => router.push('/teacher/notice/write')}
+                        className="px-3 py-1 text-xs border rounded bg-gray-50 hover:bg-gray-100"
+                      >
+                        공지 작성
+                      </button>
+                    </div>
 
-            {/* ▷ 공지 확인 */}
-            {topTab === 'notice' && (
-              <div className="h-full flex flex-col">
-                <div className="flex justify-between items-center mb-4">
-                  <div>
-                    <h3 className="text-base font-bold mb-1">과목별 공지</h3>
-                    <p className="text-xs text-gray-500">선택한 과목 : {selectedCourse.name}</p>
-                  </div>
-                  <button
-                    onClick={() => router.push('/teacher/notice/write')}
-                    className="px-3 py-1 text-xs border rounded bg-gray-50 hover:bg-gray-100"
-                  >
-                    공지 작성
-                  </button>
-                </div>
-
-                <div className="border-t">
-                  <table className="w-full text-sm">
-                    <thead className="bg-gray-50 border-b">
-                      <tr className="text-gray-600">
-                        <th className="py-2 px-4 w-16 text-center">번호</th>
-                        <th className="py-2 px-4">제목</th>
-                        <th className="py-2 px-4 w-24 text-center">작성자</th>
-                        <th className="py-2 px-4 w-28 text-center">작성일</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {dummyNoticeRows.map((row) => (
-                        <tr key={row.id} className="border-b hover:bg-gray-50">
-                          <td className="py-2 px-4 text-center">{row.id}</td>
-                          <td className="py-2 px-4">{row.title}</td>
-                          <td className="py-2 px-4 text-center">{row.writer}</td>
-                          <td className="py-2 px-4 text-center">{row.date}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-
-                  <div className="py-4 text-center text-xs text-gray-400">1 / 1</div>
-                </div>
-              </div>
-            )}
-
-            {/* ▷ 학생 커뮤니티 */}
-            {topTab === 'community' && (
-              <div className="h-full flex flex-col">
-                <div className="flex justify-between items-center mb-4">
-                  <div>
-                    <h3 className="text-base font-bold mb-1">학생 커뮤니티</h3>
-                    <p className="text-xs text-gray-500">선택한 과목 : {selectedCourse.name}</p>
-                  </div>
-                  <button
-                    onClick={() => router.push(`/teacher/community/write?course=${selectedCourseId}`)}
-                    className="px-3 py-1 text-xs border rounded bg-gray-50 hover:bg-gray-100"
-                  >
-                    글 작성
-                  </button>
-                </div>
-
-                <div className="border-t">
-                  <table className="w-full text-sm">
-                    <thead className="bg-gray-50 border-b">
-                      <tr className="text-gray-600">
-                        <th className="py-2 px-4 w-16 text-center">번호</th>
-                        <th className="py-2 px-4">제목</th>
-                        <th className="py-2 px-4 w-24 text-center">작성자</th>
-                        <th className="py-2 px-4 w-28 text-center">작성일</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {dummyCommunityRows.map((row) => (
-                        <tr
-                          key={row.id}
-                          className="border-b hover:bg-gray-50 cursor-pointer"
-                          onClick={() =>
-                            router.push(`/teacher/community/detail/${row.id}?course=${selectedCourseId}`)
-                          }
-                        >
-                          <td className="py-2 px-4 text-center">{row.id}</td>
-                          <td className="py-2 px-4">{row.title}</td>
-                          <td className="py-2 px-4 text-center">{row.writer}</td>
-                          <td className="py-2 px-4 text-center">{row.date}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-
-                  <div className="py-4 text-center text-xs text-gray-400">1 / 1</div>
-                </div>
-              </div>
-            )}
-
-            {/* ▷ 출결 확인 */}
-            {topTab === 'attendance' && (
-              <div className="h-full flex flex-col">
-                <div className="flex justify-between items-center mb-4">
-                  <div>
-                    <h3 className="text-base font-bold mb-1">출결 현황</h3>
-                    <p className="text-xs text-gray-500">선택한 과목 : {selectedCourse.name}</p>
-                  </div>
-                  <button
-                    onClick={() => router.push(`/teacher/attendance?course=${selectedCourseId}`)}
-                    className="px-3 py-1 text-xs border rounded bg-gray-50 hover:bg-gray-100"
-                  >
-                    출결 관리 바로가기
-                  </button>
-                </div>
-
-                <div className="border-t">
-                  <table className="w-full text-sm">
-                    <thead className="bg-gray-50 border-b">
-                      <tr className="text-gray-600">
-                        <th className="py-2 px-4 w-16 text-center">주차</th>
-                        <th className="py-2 px-4">제목</th>
-                        <th className="py-2 px-4 w-40 text-center">출결 기간</th>
-                        <th className="py-2 px-4 w-28 text-center">상태</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {dummyAttendanceRows.map((row) => (
-                        <tr key={row.week} className="border-b hover:bg-gray-50">
-                          <td className="py-2 px-4 text-center">{row.week}주차</td>
-                          <td className="py-2 px-4">{row.title}</td>
-                          <td className="py-2 px-4 text-center">{row.dateRange}</td>
-                          <td className="py-2 px-4 text-center">
-                            <span
-                              className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${getAttendanceStatusClass(
-                                row.status,
-                              )}`}
+                    <div className="border-t">
+                      <table className="w-full text-sm">
+                        <thead className="bg-gray-50 border-b">
+                          <tr className="text-gray-600">
+                            <th className="py-2 px-4 w-16 text-center">번호</th>
+                            <th className="py-2 px-4">제목</th>
+                            <th className="py-2 px-4 w-24 text-center">작성자</th>
+                            <th className="py-2 px-4 w-28 text-center">작성일</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {dummyNoticeRows.map((row) => (
+                            <tr
+                              key={row.id}
+                              className="border-b hover:bg-gray-50"
                             >
-                              {getAttendanceStatusText(row.status)}
-                            </span>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                              <td className="py-2 px-4 text-center">{row.id}</td>
+                              <td className="py-2 px-4">{row.title}</td>
+                              <td className="py-2 px-4 text-center">
+                                {row.writer}
+                              </td>
+                              <td className="py-2 px-4 text-center">
+                                {row.date}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
 
-                  <div className="py-4 text-center text-xs text-gray-400">1 / 1</div>
-                </div>
-              </div>
-            )}
+                      <div className="py-4 text-center text-xs text-gray-400">
+                        1 / 1
+                      </div>
+                    </div>
+                  </div>
+                )}
 
-          </main>
+                {/* ▷ 학생 커뮤니티 */}
+                {topTab === 'community' && (
+                  <div className="h-full flex flex-col">
+                    <div className="flex justify-between items-center mb-4">
+                      <div>
+                        <h3 className="text-base font-bold mb-1">학생 커뮤니티</h3>
+                        <p className="text-xs text-gray-500">
+                          선택한 과목 : {selectedCourse.name}
+                        </p>
+                      </div>
+                      <button
+                        onClick={() =>
+                          router.push(
+                            `/teacher/community/write?course=${selectedCourseId}`,
+                          )
+                        }
+                        className="px-3 py-1 text-xs border rounded bg-gray-50 hover:bg-gray-100"
+                      >
+                        글 작성
+                      </button>
+                    </div>
+
+                    <div className="border-t">
+                      <table className="w-full text-sm">
+                        <thead className="bg-gray-50 border-b">
+                          <tr className="text-gray-600">
+                            <th className="py-2 px-4 w-16 text-center">번호</th>
+                            <th className="py-2 px-4">제목</th>
+                            <th className="py-2 px-4 w-24 text-center">작성자</th>
+                            <th className="py-2 px-4 w-28 text-center">작성일</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {dummyCommunityRows.map((row) => (
+                            <tr
+                              key={row.id}
+                              className="border-b hover:bg-gray-50 cursor-pointer"
+                              onClick={() =>
+                                router.push(
+                                  `/teacher/community/detail/${row.id}?course=${selectedCourseId}`,
+                                )
+                              }
+                            >
+                              <td className="py-2 px-4 text-center">
+                                {row.id}
+                              </td>
+                              <td className="py-2 px-4">{row.title}</td>
+                              <td className="py-2 px-4 text-center">
+                                {row.writer}
+                              </td>
+                              <td className="py-2 px-4 text-center">
+                                {row.date}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+
+                      <div className="py-4 text-center text-xs text-gray-400">
+                        1 / 1
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* ▷ 출결 확인 */}
+                {topTab === 'attendance' && (
+                  <div className="h-full flex flex-col">
+                    <div className="flex justify-between items-center mb-4">
+                      <div>
+                        <h3 className="text-base font-bold mb-1">출결 현황</h3>
+                        <p className="text-xs text-gray-500">
+                          선택한 과목 : {selectedCourse.name}
+                        </p>
+                      </div>
+                      <button
+                        onClick={() =>
+                          router.push(
+                            `/teacher/attendance?course=${selectedCourseId}`,
+                          )
+                        }
+                        className="px-3 py-1 text-xs border rounded bg-gray-50 hover:bg-gray-100"
+                      >
+                        출결 관리 바로가기
+                      </button>
+                    </div>
+
+                    <div className="border-t">
+                      <table className="w-full text-sm">
+                        <thead className="bg-gray-50 border-b">
+                          <tr className="text-gray-600">
+                            <th className="py-2 px-4 w-16 text-center">주차</th>
+                            <th className="py-2 px-4">제목</th>
+                            <th className="py-2 px-4 w-40 text-center">
+                              출결 기간
+                            </th>
+                            <th className="py-2 px-4 w-28 text-center">상태</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {dummyAttendanceRows.map((row) => (
+                            <tr
+                              key={row.week}
+                              className="border-b hover:bg-gray-50"
+                            >
+                              <td className="py-2 px-4 text-center">
+                                {row.week}주차
+                              </td>
+                              <td className="py-2 px-4">{row.title}</td>
+                              <td className="py-2 px-4 text-center">
+                                {row.dateRange}
+                              </td>
+                              <td className="py-2 px-4 text-center">
+                                <span
+                                  className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${getAttendanceStatusClass(
+                                    row.status,
+                                  )}`}
+                                >
+                                  {getAttendanceStatusText(row.status)}
+                                </span>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+
+                      <div className="py-4 text-center text-xs text-gray-400">
+                        1 / 1
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </main>
+            </div>
+          </div>
         </div>
       </div>
     </div>
