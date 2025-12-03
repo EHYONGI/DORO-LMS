@@ -98,7 +98,7 @@ export default function DashboardPage() {
                             activeCourses.map((item) => (
                                 <div
                                     key={item.lecture.id}
-                                    onClick={() => router.push(`/dashboard/courses/${item.lecture.id}/management`)}
+                                    onClick={() => router.push(`/student/dashboard/courses/${item.lecture.id}/management`)}
                                     className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md hover:border-sky-300 cursor-pointer transition flex items-center justify-between group"
                                 >
                                     <div className="flex items-center gap-4">

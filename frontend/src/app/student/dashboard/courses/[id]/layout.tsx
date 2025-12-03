@@ -11,10 +11,9 @@ export default function CourseLayout({ children }: { children: React.ReactNode }
 
     // 탭 정의 (현재 URL과 비교하여 활성화 스타일 적용)
     const tabs = [
-        { name: '강의관리', path: `/dashboard/courses/${courseId}/management` },
-        { name: '공지 확인', path: `/dashboard/courses/${courseId}/notices` },
-        { name: '학생 커뮤니티', path: `/dashboard/courses/${courseId}/community` },
-        { name: '출결 확인', path: `/dashboard/courses/${courseId}/attendance` },
+        { name: '강의관리', path: `/student/dashboard/courses/${courseId}/management` },
+        { name: '공지 확인', path: `/student/dashboard/courses/${courseId}/notices` },
+        { name: '학생 커뮤니티', path: `/student/dashboard/courses/${courseId}/community` },
     ];
 
     return (
