@@ -1,25 +1,29 @@
 # backend/lecture/serializers.py
 from rest_framework import serializers
 from .models import Lecture, Enrollment, Assignment, LectureNotice, Attendance, LectureRecommendation
+from user.models import User  # ← User import 추가!
 
 
-# 1. 강의 정보 시리얼라이저 (확장됨)
+# ========================================
+# 1. 기본 강의 정보 시리얼라이저
+# ========================================
+
 class LectureSerializer(serializers.ModelSerializer):
+    """강의 정보 시리얼라이저 (확장됨)"""
     instructor_name = serializers.ReadOnlyField(source='instructor.username')
     
-    # [추가] 커리큘럼 관련 필드
+    # 커리큘럼 관련 필드
     competency_type_display = serializers.CharField(source='get_competency_type_display', read_only=True)
     level_display = serializers.CharField(source='get_level_display', read_only=True)
     status_display = serializers.CharField(source='get_status_display', read_only=True)
     
-    # [추가] 선수과목 수
+    # 선수과목 수
     prerequisite_count = serializers.SerializerMethodField()
     
     class Meta:
         model = Lecture
         fields = [
             'id', 'name', 'instructor_name', 'status', 'status_display', 'description',
-            # 추가된 커리큘럼 필드
             'course_code', 'competency_type', 'competency_type_display',
             'level', 'level_display', 'required_score',
             'learning_tools', 'required_kits', 'prerequisite_count',
@@ -31,7 +35,6 @@ class LectureSerializer(serializers.ModelSerializer):
         return obj.prerequisite_lectures.count()
 
 
-# [추가] 간단한 강의 정보 (추천용)
 class LectureSimpleSerializer(serializers.ModelSerializer):
     """추천 목록에서 사용할 간소화된 강의 정보"""
     instructor_name = serializers.CharField(source='instructor.username', read_only=True)
@@ -48,7 +51,50 @@ class LectureSimpleSerializer(serializers.ModelSerializer):
         ]
 
 
-# [추가] 강의 추천 시리얼라이저
+class LectureDetailSerializer(LectureSerializer):
+    """강의 상세 정보 (추천 점수 포함)"""
+    user_recommendation_score = serializers.SerializerMethodField()
+    user_recommendation_reason = serializers.SerializerMethodField()
+    is_eligible = serializers.SerializerMethodField()
+    prerequisite_lectures = LectureSimpleSerializer(many=True, read_only=True)
+    
+    class Meta(LectureSerializer.Meta):
+        fields = LectureSerializer.Meta.fields + [
+            'user_recommendation_score',
+            'user_recommendation_reason',
+            'is_eligible',
+            'prerequisite_lectures'
+        ]
+    
+    def get_user_recommendation_score(self, obj):
+        """현재 사용자에 대한 추천 점수"""
+        request = self.context.get('request')
+        if not request or not request.user.is_authenticated:
+            return None
+        return obj.get_recommendation_score(request.user)
+    
+    def get_user_recommendation_reason(self, obj):
+        """추천 이유"""
+        request = self.context.get('request')
+        if not request or not request.user.is_authenticated:
+            return None
+        
+        from .services import LectureRecommendationService
+        score = obj.get_recommendation_score(request.user)
+        return LectureRecommendationService._generate_reason(request.user, obj, score)
+    
+    def get_is_eligible(self, obj):
+        """수강 자격 여부"""
+        request = self.context.get('request')
+        if not request or not request.user.is_authenticated:
+            return True
+        return obj.is_eligible_for_user(request.user)
+
+
+# ========================================
+# 2. 강의 추천 시리얼라이저
+# ========================================
+
 class LectureRecommendationSerializer(serializers.ModelSerializer):
     """강의 추천 정보"""
     lecture = LectureSimpleSerializer(read_only=True)
@@ -89,7 +135,6 @@ class LectureRecommendationSerializer(serializers.ModelSerializer):
         ).exists()
 
 
-# [추가] 강의 추천 생성용 (실시간 추천 응답)
 class LectureRecommendationResponseSerializer(serializers.Serializer):
     """실시간 추천 응답용 Serializer (모델 없이 사용)"""
     lecture_id = serializers.IntegerField()
@@ -107,8 +152,12 @@ class LectureRecommendationResponseSerializer(serializers.Serializer):
     is_in_wishlist = serializers.BooleanField(default=False)
 
 
-# 2. 수강 내역 시리얼라이저 (기존 유지)
+# ========================================
+# 3. 수강 신청 시리얼라이저
+# ========================================
+
 class EnrollmentSerializer(serializers.ModelSerializer):
+    """수강 내역 시리얼라이저"""
     lecture = LectureSerializer(read_only=True)
     
     class Meta:
@@ -116,7 +165,6 @@ class EnrollmentSerializer(serializers.ModelSerializer):
         fields = ['id', 'lecture', 'joined_at']
 
 
-# [추가] 수강 신청용 Serializer
 class EnrollmentCreateSerializer(serializers.ModelSerializer):
     """수강 신청 생성용"""
     lecture_id = serializers.IntegerField(write_only=True)
@@ -160,17 +208,27 @@ class EnrollmentCreateSerializer(serializers.ModelSerializer):
         )
 
 
-# 3. 과제 시리얼라이저 (기존 유지)
+# ========================================
+# 4. 과제 시리얼라이저
+# ========================================
+
 class AssignmentSerializer(serializers.ModelSerializer):
+    """과제 시리얼라이저"""
     lecture_name = serializers.ReadOnlyField(source='lecture.name')
-    
+
+    # DB 필드(due_date, description)를 API 필드(deadline, content)로 매핑
+    deadline = serializers.DateTimeField(source='due_date')
+    content = serializers.CharField(source='description')
+
     class Meta:
         model = Assignment
-        fields = ['id', 'lecture_name', 'title', 'deadline', 'content']
+        fields = ['id', 'lecture_name', 'title', 'deadline', 'content', 'created_at']
+# ========================================
+# 5. 강의 공지 시리얼라이저
+# ========================================
 
-
-# 4. 강의 공지 시리얼라이저 (기존 유지)
 class LectureNoticeSerializer(serializers.ModelSerializer):
+    """강의 공지 시리얼라이저"""
     content = serializers.CharField(source='body') 
     lecture_name = serializers.ReadOnlyField(source='lecture.name')
     author_name = serializers.ReadOnlyField(source='lecture.instructor.username')
@@ -180,8 +238,12 @@ class LectureNoticeSerializer(serializers.ModelSerializer):
         fields = ['id', 'title', 'content', 'created_at', 'lecture_name', 'author_name', 'lecture']
 
 
-# 5. 출결 시리얼라이저 (기존 유지)
+# ========================================
+# 6. 출결 시리얼라이저
+# ========================================
+
 class AttendanceSerializer(serializers.ModelSerializer):
+    """출결 시리얼라이저"""
     status = serializers.CharField(source='get_status_display', read_only=True)
     
     class Meta:
@@ -189,7 +251,31 @@ class AttendanceSerializer(serializers.ModelSerializer):
         fields = ['id', 'week', 'attendance_date', 'status']
 
 
-# [추가] 사용자 역량 정보 Serializer
+class AttendanceDetailSerializer(serializers.ModelSerializer):
+    """출결 상세 정보 (학생 이름 포함)"""
+    student_name = serializers.CharField(source='user.get_full_name', read_only=True)
+    student_username = serializers.CharField(source='user.username', read_only=True)
+    
+    class Meta:
+        model = Attendance
+        fields = ['id', 'user', 'student_name', 'student_username', 'lecture', 'week', 'status', 'attendance_date']
+
+
+# ========================================
+# 7. 학생 정보 시리얼라이저
+# ========================================
+
+class StudentSerializer(serializers.ModelSerializer):
+    """학생 정보 시리얼라이저"""
+    class Meta:
+        model = User
+        fields = ['id', 'username', 'first_name', 'last_name', 'email']
+
+
+# ========================================
+# 8. 사용자 역량 정보 시리얼라이저
+# ========================================
+
 class UserCompetencySerializer(serializers.Serializer):
     """사용자 역량 점수"""
     digital_score = serializers.IntegerField(min_value=0, max_value=100)
@@ -205,44 +291,3 @@ class UserCompetencySerializer(serializers.Serializer):
             'making_score': instance.making_score,
             'computing_score': instance.computing_score,
         }
-
-
-# [추가] 강의 상세 + 추천 정보
-class LectureDetailSerializer(LectureSerializer):
-    """강의 상세 정보 (추천 점수 포함)"""
-    user_recommendation_score = serializers.SerializerMethodField()
-    user_recommendation_reason = serializers.SerializerMethodField()
-    is_eligible = serializers.SerializerMethodField()
-    prerequisite_lectures = LectureSimpleSerializer(many=True, read_only=True)
-    
-    class Meta(LectureSerializer.Meta):
-        fields = LectureSerializer.Meta.fields + [
-            'user_recommendation_score',
-            'user_recommendation_reason',
-            'is_eligible',
-            'prerequisite_lectures'
-        ]
-    
-    def get_user_recommendation_score(self, obj):
-        """현재 사용자에 대한 추천 점수"""
-        request = self.context.get('request')
-        if not request or not request.user.is_authenticated:
-            return None
-        return obj.get_recommendation_score(request.user)
-    
-    def get_user_recommendation_reason(self, obj):
-        """추천 이유"""
-        request = self.context.get('request')
-        if not request or not request.user.is_authenticated:
-            return None
-        
-        from .services import LectureRecommendationService
-        score = obj.get_recommendation_score(request.user)
-        return LectureRecommendationService._generate_reason(request.user, obj, score)
-    
-    def get_is_eligible(self, obj):
-        """수강 자격 여부"""
-        request = self.context.get('request')
-        if not request or not request.user.is_authenticated:
-            return True
-        return obj.is_eligible_for_user(request.user)

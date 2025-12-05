@@ -1,21 +1,21 @@
-// app/student/dashboard/courses/[id]/notices/page.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useParams } from 'next/navigation';
-import Link from 'next/link';
+import { useParams, useRouter } from 'next/navigation';
 
 interface Notice {
     id: number;
     title: string;
-    content: string;
+    body: string;
     created_at: string;
     author_name: string;
 }
 
-export default function CourseNoticesPage() {
+export default function TeacherNoticesPage() {
     const params = useParams();
+    const router = useRouter();
     const courseId = params.id;
+
     const [notices, setNotices] = useState<Notice[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -23,9 +23,12 @@ export default function CourseNoticesPage() {
         const fetchNotices = async () => {
             const token = localStorage.getItem('access_token');
             try {
-                const res = await fetch(`http://127.0.0.1:8000/api/lecture/${courseId}/notices/`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
+                const res = await fetch(
+                    `http://127.0.0.1:8000/api/teacher/lectures/${courseId}/notices/`,
+                    {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    }
+                );
                 if (res.ok) {
                     setNotices(await res.json());
                 }
@@ -45,7 +48,16 @@ export default function CourseNoticesPage() {
 
     return (
         <div className="min-h-[600px] border border-gray-200 rounded-lg shadow-sm bg-white p-8">
-            <h2 className="text-xl font-bold text-gray-800 mb-6">공지사항</h2>
+            <div className="flex justify-between items-center mb-6">
+                <h2 className="text-xl font-bold text-gray-800">공지사항</h2>
+                {/* 추가: 글 작성 버튼 */}
+                <button
+                    onClick={() => router.push(`/teacher/dashboard/courses/${courseId}/notices/write`)}
+                    className="bg-sky-600 text-white px-4 py-2 rounded text-sm font-bold hover:bg-sky-700"
+                >
+                    + 글 작성
+                </button>
+            </div>
 
             {loading ? (
                 <p className="text-center text-gray-500 py-10">로딩 중...</p>
@@ -58,6 +70,7 @@ export default function CourseNoticesPage() {
                                 <th className="py-3 font-medium text-center">제목</th>
                                 <th className="py-3 font-medium w-24 text-center">작성자</th>
                                 <th className="py-3 font-medium w-28 text-center">작성일</th>
+                                <th className="py-3 font-medium w-24 text-center">관리</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100">
@@ -67,12 +80,12 @@ export default function CourseNoticesPage() {
                                         {notices.length - index}
                                     </td>
                                     <td className="py-4 pl-4">
-                                        <Link
-                                            href={`/student/dashboard/courses/${courseId}/notices/${notice.id}`}
-                                            className="text-gray-800 hover:text-sky-600 font-medium block"
+                                        <button
+                                            onClick={() => router.push(`/teacher/dashboard/courses/${courseId}/notices/${notice.id}`)}
+                                            className="text-gray-800 hover:text-sky-600 font-medium text-left"
                                         >
                                             {notice.title}
-                                        </Link>
+                                        </button>
                                     </td>
                                     <td className="py-4 text-center text-gray-600">
                                         {notice.author_name || '관리자'}
@@ -80,10 +93,35 @@ export default function CourseNoticesPage() {
                                     <td className="py-4 text-center text-gray-400 text-xs">
                                         {formatDate(notice.created_at)}
                                     </td>
+                                    <td className="py-4 text-center">
+                                        <button
+                                            onClick={() => router.push(`/teacher/dashboard/courses/${courseId}/notices/${notice.id}/edit`)}
+                                            className="text-sky-600 text-xs hover:underline mr-2"
+                                        >
+                                            수정
+                                        </button>
+                                        <button
+                                            onClick={async () => {
+                                                if (!confirm('정말 삭제하시겠습니까?')) return;
+                                                const token = localStorage.getItem('access_token');
+                                                const res = await fetch(`http://127.0.0.1:8000/api/lecture/notices/${notice.id}/`, {
+                                                    method: 'DELETE',
+                                                    headers: { 'Authorization': `Bearer ${token}` }
+                                                });
+                                                if (res.ok) {
+                                                    alert('삭제되었습니다.');
+                                                    window.location.reload();
+                                                }
+                                            }}
+                                            className="text-red-600 text-xs hover:underline"
+                                        >
+                                            삭제
+                                        </button>
+                                    </td>
                                 </tr>
                             )) : (
                                 <tr>
-                                    <td colSpan={4} className="py-10 text-center text-gray-400">
+                                    <td colSpan={5} className="py-10 text-center text-gray-400">
                                         등록된 공지사항이 없습니다.
                                     </td>
                                 </tr>
