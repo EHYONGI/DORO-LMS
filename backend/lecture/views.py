@@ -9,16 +9,13 @@ from django.utils import timezone
 from django.shortcuts import get_object_or_404
 from datetime import date
 
-# 같은 앱(lecture)의 모델들
 from .models import (
     Lecture, Assignment, Attendance, Enrollment, LectureNotice, 
     Wishlist, LectureRecommendation, LectureApplication, Submission
 )
 
-# user 앱의 모델
 from user.models import User
 
-# 같은 앱(lecture)의 시리얼라이저들
 from .serializers import (
     LectureSerializer, 
     AssignmentSerializer,
@@ -26,7 +23,6 @@ from .serializers import (
     EnrollmentSerializer,
     StudentSerializer, 
     LectureNoticeSerializer,
-    # 추천 시스템 시리얼라이저
     LectureRecommendationSerializer,
     LectureRecommendationResponseSerializer,
     EnrollmentCreateSerializer,
@@ -35,7 +31,6 @@ from .serializers import (
     SubmissionSerializer
 )
 
-# 추천 시스템 서비스
 from .services import LectureRecommendationService
 
 
@@ -105,7 +100,6 @@ def my_attendance_api(request, lecture_id):
     
     result = []
     for att in attendances:
-        # IntegerChoices 값을 문자열로 변환
         if att.status == Attendance.Status.PRESENT:
             status_str = 'PRESENT'
         elif att.status == Attendance.Status.LATE:
@@ -549,7 +543,6 @@ def lecture_students_api(request, lecture_id):
             'student_id': student.username, 
         })
     
-    # [수정] 이름순 정렬
     students.sort(key=lambda x: x['name'])
     
     return Response(students)
@@ -593,7 +586,6 @@ def lecture_attendance_week_api(request, lecture_id, week):
             else:
                 status_str = 'ABSENT'
             
-            # ✅ 학생 이름 처리 수정
             full_name = f"{att.student.last_name}{att.student.first_name}".strip()
             if not full_name:
                 full_name = att.student.username

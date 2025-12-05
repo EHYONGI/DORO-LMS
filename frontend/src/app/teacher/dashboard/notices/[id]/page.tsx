@@ -7,7 +7,7 @@ import { useParams, useRouter } from 'next/navigation';
 interface Notice {
     id: number;
     title: string;
-    content: string; // backend serializer 필드명 확인 (SystemNoticeSerializer uses 'content')
+    content: string;
     created_at: string;
     author_name?: string;
 }

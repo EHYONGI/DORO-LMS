@@ -50,7 +50,6 @@ export default function TeacherNoticesPage() {
         <div className="min-h-[600px] border border-gray-200 rounded-lg shadow-sm bg-white p-8">
             <div className="flex justify-between items-center mb-6">
                 <h2 className="text-xl font-bold text-gray-800">공지사항</h2>
-                {/* 추가: 글 작성 버튼 */}
                 <button
                     onClick={() => router.push(`/teacher/dashboard/courses/${courseId}/notices/write`)}
                     className="bg-sky-600 text-white px-4 py-2 rounded text-sm font-bold hover:bg-sky-700"

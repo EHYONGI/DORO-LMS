@@ -14,12 +14,11 @@ interface Submission {
     file?: string;
 }
 
-// [수정] 백엔드 Serializer(AssignmentSerializer)에 맞춰 필드명 변경
 interface Assignment {
     id: number;
     title: string;
-    content: string;   // description -> content
-    deadline: string;  // due_date -> deadline
+    content: string;
+    deadline: string;
 }
 
 export default function SubmissionsPage() {
@@ -32,7 +31,6 @@ export default function SubmissionsPage() {
     const [submissions, setSubmissions] = useState<Submission[]>([]);
     const [loading, setLoading] = useState(true);
 
-    // [채점 모달 상태]
     const [gradingSubmission, setGradingSubmission] = useState<Submission | null>(null);
     const [gradeInput, setGradeInput] = useState('');
     const [feedbackInput, setFeedbackInput] = useState('');
@@ -152,11 +150,9 @@ export default function SubmissionsPage() {
                 <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6 shadow-sm">
                     <h1 className="text-2xl font-bold text-gray-900 mb-2">{assignment.title}</h1>
                     <div className="bg-gray-50 p-4 rounded-lg text-sm text-gray-700 mb-4 whitespace-pre-wrap border border-gray-100">
-                        {/* [수정] description -> content 사용 */}
                         {assignment.content}
                     </div>
                     <div className="flex gap-4 text-sm text-gray-500 border-t pt-4">
-                        {/* [수정] due_date -> deadline 사용 */}
                         <span>📅 마감일: {formatDate(assignment.deadline)}</span>
                         <span>📝 제출 인원: <strong className="text-sky-600">{submissions.length}명</strong></span>
                     </div>

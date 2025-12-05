@@ -12,7 +12,7 @@ urlpatterns = [
     path("instructors/", views.instructor_list_api),
     path("<int:pk>/", views.consultation_detail_api),
     
-    # [추가] 강사용 API
-    path("instructor/list/", views.instructor_consultation_list_api),  # 강사용 목록
-    path("<int:pk>/status/", views.update_consultation_status_api),    # 상태 변경
+    # 강사용 API
+    path("instructor/list/", views.instructor_consultation_list_api),  
+    path("<int:pk>/status/", views.update_consultation_status_api),    
 ]

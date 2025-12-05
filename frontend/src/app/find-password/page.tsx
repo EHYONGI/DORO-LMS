@@ -21,7 +21,7 @@ export default function FindPasswordPage() {
             });
 
             if (res.ok) {
-                alert("해당 이메일로 임시 비밀번호가 전송되었습니다."); // 실제 메일 서버가 없으면 콘솔(백엔드 로그)에 뜸
+                alert("해당 이메일로 임시 비밀번호가 전송되었습니다."); // 개발 단계라서 직접 이메일로 보내지는 않음
                 router.push('/login');
             } else {
                 const data = await res.json();

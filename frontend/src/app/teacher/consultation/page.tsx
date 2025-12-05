@@ -11,16 +11,13 @@ interface Consultation {
     consultation_type: string;
     topic: string;
     content: string;
-    // ✅ 희망일(날짜만) 추가
     preferred_date: string | null;
-    // ✅ 실제 상담일시(날짜+시간, 없을 수 있음)
     scheduled_at: string | null;
     status: string;
     method: string;
     created_at: string;
 }
 
-// 🔹 공통 날짜·시간 포맷 (datetime용)
 const formatDateTime = (value: string | null | undefined) => {
     if (!value) return '-';
     const d = new Date(value);
@@ -28,9 +25,6 @@ const formatDateTime = (value: string | null | undefined) => {
     return d.toLocaleString();
 };
 
-// 🔹 상담일시(신청일정/예정일) 표시용
-// 1) scheduled_at이 있으면 그걸 우선
-// 2) 없으면 preferred_date(희망일)만 날짜로 표시
 const formatConsultDate = (item: Consultation) => {
     if (item.scheduled_at) {
         return formatDateTime(item.scheduled_at);
@@ -45,10 +39,9 @@ const formatConsultDate = (item: Consultation) => {
     return '-';
 };
 
-// 날짜 문자열에서 YYYY-MM-DD만 뽑기 (preferred_date, scheduled_at 공통 사용)
 const extractDateOnly = (value: string | null | undefined) => {
     if (!value) return null;
-    return value.split('T')[0]; // T 없으면 전체가 그대로 남음
+    return value.split('T')[0];
 };
 
 export default function TeacherConsultationPage() {
@@ -68,7 +61,6 @@ export default function TeacherConsultationPage() {
     // 상담 목록 불러오기
     useEffect(() => {
         fetchConsultations();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [filters]);
 
     const fetchConsultations = async () => {
@@ -371,7 +363,6 @@ function CalendarView({ consultations }: { consultations: Consultation[] }) {
             const date = new Date(currentWeekDate);
             const dateStr = date.toISOString().split('T')[0];
 
-            // ✅ scheduled_at 없으면 preferred_date 기준으로도 캘린더에 표시
             const dayConsultations = consultations.filter((c) => {
                 const scheduledDate = extractDateOnly(c.scheduled_at);
                 const preferredDate = extractDateOnly(c.preferred_date);
@@ -429,9 +420,8 @@ function CalendarView({ consultations }: { consultations: Consultation[] }) {
                         return (
                             <div
                                 key={`${weekIdx}-${dayIdx}`}
-                                className={`border rounded p-2 min-h-[100px] ${
-                                    !isCurrentMonth ? 'bg-gray-50 text-gray-400' : ''
-                                } ${isToday ? 'border-sky-600 border-2' : ''}`}
+                                className={`border rounded p-2 min-h-[100px] ${!isCurrentMonth ? 'bg-gray-50 text-gray-400' : ''
+                                    } ${isToday ? 'border-sky-600 border-2' : ''}`}
                             >
                                 <div className="text-sm font-bold mb-1">
                                     {day.date.getDate()}

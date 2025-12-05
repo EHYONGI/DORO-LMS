@@ -11,7 +11,7 @@ export default function TeacherCourseLayout({ children }: { children: React.Reac
     const tabs = [
         { name: '강의관리', path: `/teacher/dashboard/courses/${courseId}/management` },
         { name: '공지 확인', path: `/teacher/dashboard/courses/${courseId}/notices` },
-        { name: '학생 커뮤니티', path: `/teacher/dashboard/courses/${courseId}/community` }, // 추가!
+        { name: '학생 커뮤니티', path: `/teacher/dashboard/courses/${courseId}/community` },
         { name: '출결 현황', path: `/teacher/dashboard/courses/${courseId}/attendance-list` },
     ];
 

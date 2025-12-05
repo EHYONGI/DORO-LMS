@@ -14,7 +14,7 @@ export default function SignupPage() {
         last_name: '',
         first_name: '',
         birth: '',
-        phone: '', // [추가] 전화번호 상태 초기화
+        phone: '',
     });
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -40,7 +40,7 @@ export default function SignupPage() {
                     last_name: formData.last_name,
                     first_name: formData.first_name,
                     birth: formData.birth || null,
-                    phone: formData.phone, // [추가] 전화번호 전송
+                    phone: formData.phone,
                 }),
             });
 
@@ -49,7 +49,6 @@ export default function SignupPage() {
                 router.push('/login');
             } else {
                 const data = await res.json();
-                // 에러 메시지 처리 (예: 전화번호 중복 등)
                 const msg = Object.values(data).flat().join('\n') || "가입 실패";
                 alert(msg);
             }
@@ -84,7 +83,7 @@ export default function SignupPage() {
                         </div>
                     </div>
 
-                    {/* [추가] 전화번호 입력 필드 */}
+                    {/* 입력 필드 */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">전화번호 <span className="text-red-500">*</span></label>
                         <input

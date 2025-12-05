@@ -2,7 +2,7 @@
 'use client';
 
 import Link from 'next/link';
-import Image from 'next/image'; // [추가] 이미지 컴포넌트 임포트
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
@@ -12,8 +12,6 @@ export default function Navbar() {
     const router = useRouter();
     const [user, setUser] = useState<string | null>(null);
     const [role, setRole] = useState<UserRole>(null);
-
-    // ... (loadUser 함수 및 useEffect 등 기존 로직은 그대로 유지) ...
     const loadUser = () => {
         const userData = localStorage.getItem('user');
         if (!userData) {

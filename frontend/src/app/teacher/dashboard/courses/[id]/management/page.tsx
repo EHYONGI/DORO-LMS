@@ -175,7 +175,6 @@ export default function TeacherCourseManagementPage() {
     );
 }
 
-// [수정] 출결 관리 컴포넌트 (주차 선택 + 학생 목록 + 저장 기능)
 function AttendanceManagement({ courseId }: { courseId: string }) {
     const router = useRouter();
     const [selectedWeek, setSelectedWeek] = useState(1);
@@ -323,8 +322,8 @@ function AttendanceManagement({ courseId }: { courseId: string }) {
                                                 <button
                                                     onClick={() => handleStatusChange(student.id, 'PRESENT')}
                                                     className={`px-3 py-1.5 rounded-md text-xs font-bold transition border ${attendanceRecords[student.id] === 'PRESENT'
-                                                            ? 'bg-blue-600 text-white border-blue-600'
-                                                            : 'bg-white text-gray-500 border-gray-200 hover:border-blue-400 hover:text-blue-600'
+                                                        ? 'bg-blue-600 text-white border-blue-600'
+                                                        : 'bg-white text-gray-500 border-gray-200 hover:border-blue-400 hover:text-blue-600'
                                                         }`}
                                                 >
                                                     출석
@@ -332,8 +331,8 @@ function AttendanceManagement({ courseId }: { courseId: string }) {
                                                 <button
                                                     onClick={() => handleStatusChange(student.id, 'LATE')}
                                                     className={`px-3 py-1.5 rounded-md text-xs font-bold transition border ${attendanceRecords[student.id] === 'LATE'
-                                                            ? 'bg-orange-500 text-white border-orange-500'
-                                                            : 'bg-white text-gray-500 border-gray-200 hover:border-orange-400 hover:text-orange-500'
+                                                        ? 'bg-orange-500 text-white border-orange-500'
+                                                        : 'bg-white text-gray-500 border-gray-200 hover:border-orange-400 hover:text-orange-500'
                                                         }`}
                                                 >
                                                     지각
@@ -341,8 +340,8 @@ function AttendanceManagement({ courseId }: { courseId: string }) {
                                                 <button
                                                     onClick={() => handleStatusChange(student.id, 'ABSENT')}
                                                     className={`px-3 py-1.5 rounded-md text-xs font-bold transition border ${attendanceRecords[student.id] === 'ABSENT'
-                                                            ? 'bg-red-600 text-white border-red-600'
-                                                            : 'bg-white text-gray-500 border-gray-200 hover:border-red-400 hover:text-red-600'
+                                                        ? 'bg-red-600 text-white border-red-600'
+                                                        : 'bg-white text-gray-500 border-gray-200 hover:border-red-400 hover:text-red-600'
                                                         }`}
                                                 >
                                                     결석

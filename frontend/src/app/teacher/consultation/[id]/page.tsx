@@ -13,7 +13,7 @@ interface Consultation {
     consultation_type: string;
     topic: string;
     content: string;
-    scheduled_at: string | null;   // 🔹 null 허용
+    scheduled_at: string | null;
     status: string;
     method: string;
     created_at: string;
@@ -29,11 +29,10 @@ export default function TeacherConsultationDetailPage() {
 
     // 🔹 날짜 포맷 공통 함수
     const formatDateTime = (value: string | null | undefined) => {
-        if (!value) return '-'; // 값이 없으면 미정 표시
+        if (!value) return '-';
 
         const d = new Date(value);
         if (Number.isNaN(d.getTime())) {
-            // JS가 해석 못 하면 원래 문자열 그대로 보여주기
             return value;
         }
         return d.toLocaleString();

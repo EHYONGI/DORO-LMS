@@ -92,9 +92,12 @@ CORS_ALLOWED_ORIGINS = [
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        # 데이터베이스 파일 경로를 지정합니다.
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'doro_db',
+        'USER': 'doro_user',
+        'PASSWORD': 'doro1234',
+        'HOST': 'localhost',
+        'PORT': '5432',
     }
 }
 

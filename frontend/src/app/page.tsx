@@ -7,7 +7,6 @@ export default function HomePage() {
       <section className="relative mx-auto max-w-6xl px-4 pt-10 pb-16">
         <div className="relative overflow-hidden rounded-xl">
 
-          {/* 🔥 home.png 배경 적용 */}
           <div
             className="h-[360px] w-full bg-cover bg-center opacity-60"
             style={{ backgroundImage: "url('/home.png')" }}

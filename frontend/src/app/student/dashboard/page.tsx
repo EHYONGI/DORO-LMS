@@ -132,7 +132,7 @@ export default function DashboardPage() {
                             )) : (
                                 <div className="flex flex-col items-center justify-center py-20 text-gray-400 border rounded-xl bg-white h-full">
                                     <p className="mb-2 text-lg">수강 중인 수업이 없습니다.</p>
-                                    <button onClick={() => router.push('/course')} className="text-sm text-sky-600 underline hover:text-sky-800">
+                                    <button onClick={() => router.push('/student/course')} className="text-sm text-sky-600 underline hover:text-sky-800">
                                         수강신청 하러 가기
                                     </button>
                                 </div>

@@ -33,9 +33,8 @@ export default function TeacherCourseApplicationPage() {
     const router = useRouter();
     const [activeTab, setActiveTab] = useState<'register' | 'wishlist' | 'enrolled'>('register');
 
-    // 데이터 상태
     const [lectures, setLectures] = useState<Lecture[]>([]);
-    const [wishlistLectures, setWishlistLectures] = useState<LectureApplication[]>([]);
+    const [wishlistLectures, setWishlistLectures] = useState<Lecture[]>([]);
     const [enrolledLectures, setEnrolledLectures] = useState<LectureApplication[]>([]);
 
     const [loading, setLoading] = useState(true);
@@ -67,21 +66,24 @@ export default function TeacherCourseApplicationPage() {
                 if (res.ok) {
                     const data = await res.json();
                     // 강사 미배정 강의만 필터링
-                    const recruiting = data.filter((lecture: Lecture) => 
+                    const recruiting = data.filter((lecture: Lecture) =>
                         lecture.status === 'RECRUITING' || !lecture.instructor_name
                     );
                     setLectures(recruiting);
                 }
             }
             else if (activeTab === 'wishlist') {
-                // 희망 과목 (지원한 강의)
-                const res = await fetch('http://127.0.0.1:8000/api/teacher/applications/', {
+                // [수정] 희망 과목 (Wishlist API 사용)
+                // 기존 applications API가 아니라 wishlist API를 호출하여 '지원'과 분리
+                const res = await fetch('http://127.0.0.1:8000/api/courses/wishlist', {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
-                if (res.ok) setWishlistLectures(await res.json());
+                if (res.ok) {
+                    setWishlistLectures(await res.json());
+                }
             }
             else if (activeTab === 'enrolled') {
-                // 신청 내역 확인
+                // 신청(지원) 내역 확인 (Application API 사용)
                 const res = await fetch('http://127.0.0.1:8000/api/teacher/applications/', {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
@@ -94,7 +96,7 @@ export default function TeacherCourseApplicationPage() {
         }
     };
 
-    // 강의 지원
+    // 강의 지원 (실제 신청)
     const handleEnroll = async (lectureId: number, lectureName: string) => {
         const token = localStorage.getItem('access_token');
         const message = prompt(`"${lectureName}" 강의에 지원하시겠습니까?\n지원 메시지를 입력해주세요:`, '');
@@ -102,6 +104,7 @@ export default function TeacherCourseApplicationPage() {
         if (message === null) return;
 
         try {
+            // 지원은 기존대로 Application API 사용
             const res = await fetch('http://127.0.0.1:8000/api/teacher/applications/', {
                 method: 'POST',
                 headers: {
@@ -115,7 +118,8 @@ export default function TeacherCourseApplicationPage() {
             });
 
             if (res.ok) {
-                alert('강의 지원이 완료되었습니다!');
+                alert('강의 지원이 완료되었습니다!\n[신청내역 확인] 탭에서 확인 가능합니다.');
+                // 탭 이동 없이 데이터만 갱신하거나, 필요시 탭 이동
                 fetchData();
             } else {
                 const error = await res.json();
@@ -127,37 +131,56 @@ export default function TeacherCourseApplicationPage() {
         }
     };
 
-    // 희망과목에 추가 (메시지 없이 바로 지원)
+    // [수정] 희망과목에 추가 (Wishlist API 사용)
     const handleAddToWishlist = async (lectureId: number, lectureName: string) => {
         const token = localStorage.getItem('access_token');
 
         try {
-            const res = await fetch('http://127.0.0.1:8000/api/teacher/applications/', {
+            // LectureApplication 생성이 아니라 Wishlist 생성 API 호출
+            const res = await fetch(`http://127.0.0.1:8000/api/courses/${lectureId}/wishlist`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    lecture_id: lectureId,
-                    message: '희망과목으로 등록하였습니다.'
-                })
+                }
             });
 
             if (res.ok) {
                 alert(`"${lectureName}" 강의가 희망과목에 추가되었습니다!`);
-                fetchData();
+                // 여기서 fetch는 불필요할 수 있으나 상태 동기화를 위해 호출 가능
             } else {
                 const error = await res.json();
-                alert(error.error || '희망과목 추가에 실패했습니다.');
+                alert(error.message || error.error || '이미 추가되었거나 오류가 발생했습니다.');
             }
         } catch (error) {
             console.error('희망과목 추가 오류:', error);
-            alert('희망과목 추가 중 오류가 발생했습니다.');
+            alert('오류가 발생했습니다.');
         }
     };
 
-    // 지원 취소
+    // [추가] 희망과목 삭제
+    const handleRemoveWishlist = async (lectureId: number) => {
+        if (!confirm('희망과목에서 삭제하시겠습니까?')) return;
+        const token = localStorage.getItem('access_token');
+
+        try {
+            const res = await fetch(`http://127.0.0.1:8000/api/courses/${lectureId}/wishlist`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (res.ok) {
+                alert('삭제되었습니다.');
+                fetchData(); // 목록 갱신
+            } else {
+                alert('삭제 실패');
+            }
+        } catch (error) {
+            console.error(error);
+        }
+    };
+
+    // 지원 취소 (Application 삭제)
     const handleCancelEnrollment = async (applicationId: number, lectureName: string) => {
         if (!confirm(`"${lectureName}" 지원을 취소하시겠습니까?`)) return;
 
@@ -241,8 +264,8 @@ export default function TeacherCourseApplicationPage() {
         }
     };
 
-    // 강의 카드 컴포넌트 (수강신청 탭용)
-    const LectureCard = ({ lecture }: { lecture: Lecture }) => (
+    // 강의 카드 컴포넌트 (수강신청 탭 & 희망과목 탭 공용)
+    const LectureCard = ({ lecture, isWishlist = false }: { lecture: Lecture, isWishlist?: boolean }) => (
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-lg transition-all overflow-hidden">
             {/* 카드 헤더 */}
             <div className="bg-gradient-to-r from-sky-500 to-sky-600 p-4">
@@ -300,85 +323,31 @@ export default function TeacherCourseApplicationPage() {
                         onClick={() => handleEnroll(lecture.id, lecture.name)}
                         className="flex-1 bg-sky-600 text-white py-2.5 rounded-lg font-bold hover:bg-sky-700 transition shadow-sm"
                     >
-                        신청
+                        지원하기
                     </button>
-                    <button
-                        onClick={() => handleAddToWishlist(lecture.id, lecture.name)}
-                        className="px-4 py-2.5 border border-sky-600 text-sky-600 rounded-lg hover:bg-sky-50 transition"
-                        title="희망과목 추가"
-                    >
-                        ♡
-                    </button>
-                </div>
-            </div>
-        </div>
-    );
 
-    // 지원 내역 카드 컴포넌트 (희망과목 탭용)
-    const ApplicationCard = ({ app }: { app: LectureApplication }) => (
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-lg transition-all overflow-hidden">
-            {/* 카드 헤더 */}
-            <div className="bg-gradient-to-r from-sky-500 to-sky-600 p-4">
-                <div className="flex justify-between items-start mb-2">
-                    <div className="flex gap-2">
-                        {getStatusBadge(app.status)}
-                        {app.lecture.level_display && (
-                            <span className={`${getLevelColor(app.lecture.level || '')} text-xs font-bold px-3 py-1 rounded-full`}>
-                                {app.lecture.level_display}
-                            </span>
-                        )}
-                    </div>
-                </div>
-                <div className="flex items-center gap-2">
-                    {app.lecture.competency_type && (
-                        <span className="text-2xl">{getCompetencyIcon(app.lecture.competency_type)}</span>
+                    {!isWishlist ? (
+                        <button
+                            onClick={() => handleAddToWishlist(lecture.id, lecture.name)}
+                            className="px-4 py-2.5 border border-sky-600 text-sky-600 rounded-lg hover:bg-sky-50 transition"
+                            title="희망과목 추가"
+                        >
+                            ♡
+                        </button>
+                    ) : (
+                        <button
+                            onClick={() => handleRemoveWishlist(lecture.id)}
+                            className="px-4 py-2.5 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition font-bold text-sm"
+                        >
+                            삭제
+                        </button>
                     )}
-                    <h3 className="text-white font-bold text-lg">{app.lecture.name}</h3>
                 </div>
-                {app.lecture.course_code && (
-                    <p className="text-sky-100 text-xs mt-1">{app.lecture.course_code}</p>
-                )}
-                <p className="text-sky-100 text-sm mt-1">
-                    {app.lecture.instructor_name ? `${app.lecture.instructor_name} 강사님` : '강사 미정'}
-                </p>
-            </div>
-
-            {/* 카드 본문 */}
-            <div className="p-5">
-                {/* 지원 메시지 */}
-                {app.message && (
-                    <div className="mb-3 p-2 bg-gray-50 rounded-lg">
-                        <p className="text-xs text-gray-600">
-                            <strong>지원 메시지:</strong> {app.message}
-                        </p>
-                    </div>
-                )}
-
-                <p className="text-gray-600 text-sm mb-4 line-clamp-3 min-h-[60px]">
-                    {app.lecture.description || '강의 설명이 없습니다.'}
-                </p>
-
-                <div className="flex items-center gap-2 text-sm text-gray-400 mb-4">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                    <span>{new Date(app.created_at).toLocaleDateString()}</span>
-                </div>
-
-                {/* 버튼 */}
-                {app.status === 'PENDING' && (
-                    <button
-                        onClick={() => handleCancelEnrollment(app.id, app.lecture.name)}
-                        className="w-full bg-red-100 text-red-600 py-2.5 rounded-lg font-bold hover:bg-red-200 transition"
-                    >
-                        취소
-                    </button>
-                )}
             </div>
         </div>
     );
 
-    // 승인 내역 카드 컴포넌트 (신청내역 확인 탭용)
+    // 승인 내역 카드 컴포넌트 (신청내역 확인 탭용 - Application 모델 사용)
     const ApprovalCard = ({ app }: { app: LectureApplication }) => (
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-lg transition-all overflow-hidden">
             {/* 카드 헤더 */}
@@ -394,13 +363,12 @@ export default function TeacherCourseApplicationPage() {
                     {/* 승인여부 */}
                     <div className="text-right">
                         <div className="text-white text-xs mb-1">승인여부</div>
-                        <span className={`text-4xl font-bold ${
-                            app.status === 'APPROVED' ? 'text-white' :
+                        <span className={`text-4xl font-bold ${app.status === 'APPROVED' ? 'text-white' :
                             app.status === 'REJECTED' ? 'text-red-200' :
-                            'text-gray-300'
-                        }`}>
+                                'text-gray-300'
+                            }`}>
                             {app.status === 'APPROVED' ? 'O' :
-                             app.status === 'REJECTED' ? 'X' : '-'}
+                                app.status === 'REJECTED' ? 'X' : '-'}
                         </span>
                     </div>
                 </div>
@@ -418,9 +386,24 @@ export default function TeacherCourseApplicationPage() {
             {/* 카드 본문 */}
             <div className="p-5">
                 {/* 상태 배지 */}
-                <div className="mb-3">
+                <div className="mb-3 flex justify-between items-center">
                     {getStatusBadge(app.status)}
+                    {/* 대기 중일 때 취소 버튼 */}
+                    {app.status === 'PENDING' && (
+                        <button
+                            onClick={() => handleCancelEnrollment(app.id, app.lecture.name)}
+                            className="text-xs text-red-500 hover:text-red-700 underline"
+                        >
+                            지원 취소
+                        </button>
+                    )}
                 </div>
+
+                {app.message && (
+                    <div className="mb-3 p-2 bg-gray-50 rounded text-xs text-gray-600 truncate">
+                        msg: {app.message}
+                    </div>
+                )}
 
                 <p className="text-gray-600 text-sm mb-4 line-clamp-3 min-h-[60px]">
                     {app.lecture.description || '강의 설명이 없습니다.'}
@@ -430,7 +413,7 @@ export default function TeacherCourseApplicationPage() {
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </svg>
-                    <span>신청일: {new Date(app.created_at).toLocaleDateString()}</span>
+                    <span>지원일: {new Date(app.created_at).toLocaleDateString()}</span>
                 </div>
             </div>
         </div>
@@ -526,13 +509,13 @@ export default function TeacherCourseApplicationPage() {
                 </>
             )}
 
-            {/* [탭 2] 희망과목 */}
+            {/* [탭 2] 희망과목 (Wishlist API 사용) */}
             {activeTab === 'wishlist' && (
                 <>
                     {wishlistLectures.length > 0 ? (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {wishlistLectures.map((app) => (
-                                <ApplicationCard key={app.id} app={app} />
+                            {wishlistLectures.map((lecture) => (
+                                <LectureCard key={lecture.id} lecture={lecture} isWishlist={true} />
                             ))}
                         </div>
                     ) : (
@@ -540,13 +523,13 @@ export default function TeacherCourseApplicationPage() {
                             <svg className="w-16 h-16 mx-auto text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                             </svg>
-                            <p className="text-gray-500 text-lg">지원한 강의가 없습니다.</p>
+                            <p className="text-gray-500 text-lg">희망과목이 없습니다.</p>
                         </div>
                     )}
                 </>
             )}
 
-            {/* [탭 3] 신청내역 확인 */}
+            {/* [탭 3] 신청내역 확인 (Application API 사용) */}
             {activeTab === 'enrolled' && (
                 <>
                     {enrolledLectures.length > 0 ? (

@@ -137,7 +137,7 @@ export default function TeacherDashboardPage() {
                             <div
                                 key={`${notice.type}-${notice.id}`}
                                 onClick={() => router.push(notice.type === 'system'
-                                    ? `/teacher/dashboard/notices/${notice.id}` // [수정됨] 강사 전용 경로로 수정
+                                    ? `/teacher/dashboard/notices/${notice.id}`
                                     : `/teacher/dashboard/courses/${notice.lecture}/notices/${notice.id}`
                                 )}
                                 className="p-3 rounded-lg hover:bg-gray-50 transition border border-gray-100 cursor-pointer group"

@@ -24,7 +24,6 @@ class Consultation(models.Model):
         ('ONLINE', '비대면상담'),
     )
 
-    # 누가 누구에게 신청했는지
     student = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
@@ -36,7 +35,6 @@ class Consultation(models.Model):
         related_name='consultations_as_instructor',
     )
 
-    # 기본 정보
     consultation_type = models.CharField(
         max_length=20,
         choices=TYPE_CHOICES,
@@ -51,28 +49,24 @@ class Consultation(models.Model):
     topic = models.CharField(max_length=200, null=True)
     content = models.TextField()
 
-    # ✅ 학생이 신청할 때 적는 "희망 상담 일자"
     preferred_date = models.DateField(
         null=True,
         blank=True,
         verbose_name="희망 상담 일자",
     )
 
-    # ✅ 실제 상담이 확정된 날짜+시간
     scheduled_at = models.DateTimeField(
         null=True,
         blank=True,
         verbose_name="실제 상담 일시",
     )
 
-    # ✅ 상담 상태
     status = models.CharField(
         max_length=20,
         choices=STATUS_CHOICES,
         default='PENDING',
     )
 
-    # 생성 시각
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

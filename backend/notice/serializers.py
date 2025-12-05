@@ -2,7 +2,7 @@ from rest_framework import serializers
 from .models import SystemNotice
 
 class SystemNoticeSerializer(serializers.ModelSerializer):
-    author_name = serializers.ReadOnlyField(source='author.username') # 작성자 이름 표시
+    author_name = serializers.ReadOnlyField(source='author.username')
 
     class Meta:
         model = SystemNotice

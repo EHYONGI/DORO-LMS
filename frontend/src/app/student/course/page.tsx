@@ -735,7 +735,7 @@ export default function CourseRegistrationPage() {
                                             >
                                                 강의실 입장
                                             </button>
-                                            {/* [추가] 수강 취소 버튼 */}
+                                            {/* 수강 취소 버튼 */}
                                             {item.lecture.status !== 'IN_PROGRESS' && item.lecture.status !== 'CLOSED' && (
                                                 <button
                                                     onClick={() => handleCancelEnrollment(item.id, item.lecture.name)}

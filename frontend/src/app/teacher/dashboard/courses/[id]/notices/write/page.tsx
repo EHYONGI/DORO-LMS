@@ -32,7 +32,7 @@ export default function TeacherNoticeWritePage() {
                 },
                 body: JSON.stringify({
                     title,
-                    body: content, // backend에서 'body' 필드 사용
+                    body: content,
                     lecture: courseId
                 }),
             });

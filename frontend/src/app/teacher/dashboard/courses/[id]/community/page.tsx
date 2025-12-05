@@ -22,7 +22,7 @@ interface Thread {
     comments?: Comment[];
 }
 
-export default function TeacherCourseCommunityPage() { // ✅ 함수명만 변경
+export default function TeacherCourseCommunityPage() {
     const params = useParams();
     const router = useRouter();
     const courseId = params.id;
@@ -154,7 +154,6 @@ export default function TeacherCourseCommunityPage() { // ✅ 함수명만 변�
                             <h2 className="text-xl font-bold text-gray-800">
                                 {activeTab === 'all' ? '전체 게시판' : '과목 게시판'}
                             </h2>
-                            {/* ❌ 글쓰기 버튼 제거 (강사는 읽기 전용) */}
                         </div>
 
                         {loading ? (

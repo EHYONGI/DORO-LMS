@@ -15,7 +15,7 @@ export default function AssignmentCreatePage() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        
+
         if (!title.trim() || !description.trim() || !dueDate) {
             alert("모든 항목을 입력해주세요.");
             return;
@@ -25,7 +25,6 @@ export default function AssignmentCreatePage() {
         const token = localStorage.getItem('access_token');
 
         try {
-            // ✅ 과제 등록: /api/lectures/<lecture_id>/assignments/
             const res = await fetch(
                 `http://127.0.0.1:8000/api/lectures/${courseId}/assignments/`,
                 {

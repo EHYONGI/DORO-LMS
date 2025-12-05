@@ -57,7 +57,6 @@ export default function ManagerNoticeDetailPage() {
 
         const token = localStorage.getItem('access_token');
         try {
-            // [수정] URL 경로 오타 수정 (notice/system-notices)
             const res = await fetch(`http://127.0.0.1:8000/api/notice/system/${noticeId}/`, {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${token}` }

@@ -10,7 +10,7 @@ type AttendanceStatus = '출석' | '지각' | '결석' | '기타' | '';
 
 interface AttendanceRecord {
   id: number;
-  date: string; // '2025-11-30' 같은 문자열이라고 가정
+  date: string;
   course?: string;
   course_name?: string;
   status: AttendanceStatus | string;

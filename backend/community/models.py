@@ -1,6 +1,6 @@
 from django.db import models
 from user.models import User
-from lecture.models import Lecture # Lecture 모델 import
+from lecture.models import Lecture
 
 class Thread(models.Model):
     title = models.CharField(max_length=200)
@@ -24,7 +24,6 @@ class Thread(models.Model):
     def __str__(self):
         return self.title
 
-# Comment 모델은 그대로 유지
 class Comment(models.Model):
     content = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)

@@ -251,7 +251,7 @@ export default function ManagerDashboardPage() {
                                 </div>
                             </div>
 
-                            {/* 2. 개인 정보 (읽기 전용으로 변경됨) */}
+                            {/* 2. 개인 정보 (읽기 전용) */}
                             <div>
                                 <h4 className="text-sm font-bold text-gray-500 border-b pb-1 mb-3">개인 정보 (수정 불가)</h4>
                                 <div className="grid grid-cols-2 gap-4 mb-3">
