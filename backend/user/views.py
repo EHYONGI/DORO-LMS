@@ -6,7 +6,8 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework import status
-from .serializers import UserSignupSerializer, UserProfileSerializer, PasswordResetSerializer
+from django.shortcuts import get_object_or_404
+from .serializers import UserSignupSerializer, UserProfileSerializer, PasswordResetSerializer, UserManageSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 
 User = get_user_model()
@@ -148,3 +149,38 @@ def user_overview_api(request):
         "average_score": 95.5
     }
     return Response(data, status=status.HTTP_200_OK)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def manager_user_list_api(request):
+    """[매니저] 전체 유저 목록 조회 (학생만 -> 전체로 변경)"""
+    if request.user.role != 0:
+        return Response({"error": "관리자 권한이 필요합니다."}, status=status.HTTP_403_FORBIDDEN)
+
+    # [변경] 모든 유저 조회 (기존: role=1 필터 제거)
+    users = User.objects.all().order_by('role', 'username')
+    
+    serializer = UserManageSerializer(users, many=True)
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+@api_view(['PATCH'])
+@permission_classes([IsAuthenticated])
+def manager_user_update_api(request, pk):
+    """[매니저] 특정 유저 정보(역할, 개인정보, 역량점수) 수정"""
+    if request.user.role != 0:
+        return Response({"error": "관리자 권한이 필요합니다."}, status=status.HTTP_403_FORBIDDEN)
+
+    user = get_object_or_404(User, pk=pk)
+    
+    # 전체 필드 업데이트 허용
+    serializer = UserManageSerializer(user, data=request.data, partial=True)
+    if serializer.is_valid():
+        serializer.save()
+        return Response({
+            "message": "회원 정보가 수정되었습니다.",
+            "user": serializer.data
+        }, status=status.HTTP_200_OK)
+    
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

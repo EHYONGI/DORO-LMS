@@ -730,7 +730,7 @@ export default function CourseRegistrationPage() {
                                     <td className="py-4 px-4 text-center">
                                         <div className="flex gap-2 justify-center">
                                             <button
-                                                onClick={() => router.push(`/dashboard/courses/${item.lecture.id}/management`)}
+                                                onClick={() => router.push(`/student/dashboard/courses/${item.lecture.id}/management`)}
                                                 className="text-sky-600 hover:text-sky-700 text-sm font-medium px-3 py-1 rounded hover:bg-sky-50 transition"
                                             >
                                                 강의실 입장

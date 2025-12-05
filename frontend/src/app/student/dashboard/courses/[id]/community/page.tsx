@@ -158,7 +158,7 @@ export default function CourseCommunityPage() {
                             </h2>
                             {/* 글쓰기 버튼 - 실제 구현은 별도 페이지 연결 또는 모달 */}
                             <Link
-                                href={`/dashboard/community/write?lecture_id=${courseId}`}
+                                href={`/student/dashboard/community/write?lecture_id=${courseId}`}
                                 className="bg-sky-600 text-white px-4 py-2 rounded text-sm font-bold hover:bg-sky-700 transition"
                             >
                                 글 작성

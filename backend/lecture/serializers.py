@@ -1,6 +1,6 @@
 # backend/lecture/serializers.py
 from rest_framework import serializers
-from .models import Lecture, Enrollment, Assignment, LectureNotice, Attendance, LectureRecommendation
+from .models import Lecture, Enrollment, Assignment, LectureNotice, Attendance, LectureRecommendation, Submission
 from user.models import User  # ← User import 추가!
 
 
@@ -291,3 +291,17 @@ class UserCompetencySerializer(serializers.Serializer):
             'making_score': instance.making_score,
             'computing_score': instance.computing_score,
         }
+    
+
+class SubmissionSerializer(serializers.ModelSerializer):
+    """과제 제출 내역 시리얼라이저"""
+    # 학생의 실명(last_name + first_name) 또는 username 반환
+    student_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Submission
+        fields = ['id', 'student_name', 'content', 'file', 'submitted_at', 'grade', 'feedback', 'graded_at']
+
+    def get_student_name(self, obj):
+        full_name = f"{obj.student.last_name}{obj.student.first_name}".strip()
+        return full_name if full_name else obj.student.username

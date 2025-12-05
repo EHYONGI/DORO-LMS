@@ -11,9 +11,10 @@ export default function SignupPage() {
         password: '',
         confirmPassword: '',
         email: '',
-        last_name: '',  // 성
-        first_name: '', // 이름
-        birth: '',      // 생년월일
+        last_name: '',
+        first_name: '',
+        birth: '',
+        phone: '', // [추가] 전화번호 상태 초기화
     });
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -38,7 +39,8 @@ export default function SignupPage() {
                     email: formData.email,
                     last_name: formData.last_name,
                     first_name: formData.first_name,
-                    birth: formData.birth || null, // 비어있으면 null 전송
+                    birth: formData.birth || null,
+                    phone: formData.phone, // [추가] 전화번호 전송
                 }),
             });
 
@@ -47,6 +49,7 @@ export default function SignupPage() {
                 router.push('/login');
             } else {
                 const data = await res.json();
+                // 에러 메시지 처리 (예: 전화번호 중복 등)
                 const msg = Object.values(data).flat().join('\n') || "가입 실패";
                 alert(msg);
             }
@@ -79,6 +82,19 @@ export default function SignupPage() {
                             <label className="block text-sm font-medium text-gray-700 mb-1">이름</label>
                             <input name="first_name" type="text" onChange={handleChange} className="w-full border border-gray-300 p-3 text-sm rounded focus:border-sky-500 outline-none" placeholder="길동" />
                         </div>
+                    </div>
+
+                    {/* [추가] 전화번호 입력 필드 */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">전화번호 <span className="text-red-500">*</span></label>
+                        <input
+                            name="phone"
+                            type="tel"
+                            required
+                            onChange={handleChange}
+                            placeholder="010-1234-5678"
+                            className="w-full border border-gray-300 p-3 text-sm rounded focus:border-sky-500 outline-none"
+                        />
                     </div>
 
                     <div>

@@ -384,7 +384,7 @@ class Submission(models.Model):
         verbose_name='학생'
     )
     content = models.TextField(verbose_name='제출 내용')
-    file_url = models.URLField(blank=True, null=True, verbose_name='첨부 파일 URL')
+    file = models.FileField(upload_to='submissions/', blank=True, null=True, verbose_name='첨부 파일')
     submitted_at = models.DateTimeField(auto_now_add=True, verbose_name='제출일')
     grade = models.IntegerField(blank=True, null=True, verbose_name='점수')
     feedback = models.TextField(blank=True, null=True, verbose_name='피드백')

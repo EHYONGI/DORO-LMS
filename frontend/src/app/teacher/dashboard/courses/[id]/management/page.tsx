@@ -1,13 +1,37 @@
+// app/teacher/dashboard/courses/[id]/management/page.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 
+// === 데이터 타입 정의 ===
 interface Assignment {
     id: number;
     title: string;
     content: string;
     deadline: string;
+}
+
+interface MySubmission {
+    id: number;
+    content: string;
+    file: string | null;
+    submitted_at: string;
+    grade: number | null;
+    feedback: string | null;
+}
+
+// 출결 관련 타입
+interface Student {
+    id: number;
+    name: string;
+    student_id: string;
+}
+
+type AttendanceStatus = 'PRESENT' | 'LATE' | 'ABSENT';
+
+interface AttendanceRecords {
+    [studentId: number]: AttendanceStatus;
 }
 
 export default function TeacherCourseManagementPage() {
@@ -16,9 +40,13 @@ export default function TeacherCourseManagementPage() {
     const courseId = params.id;
 
     const [activeMenu, setActiveMenu] = useState<'assignments' | 'attendance'>('assignments');
+
+    // 과제 관련 상태
     const [assignments, setAssignments] = useState<Assignment[]>([]);
     const [selectedAssignment, setSelectedAssignment] = useState<Assignment | null>(null);
-    const [loading, setLoading] = useState(false);
+
+    // 과제 제출 관련 상태 (강사 페이지에서는 불필요할 수 있으나 기존 코드 유지 시 사용)
+    // (여기서는 강사 페이지이므로 과제 관리 기능만 있으면 됩니다. 제출 로직은 생략 가능하나 기존 구조 유지)
 
     useEffect(() => {
         const fetchAssignments = async () => {
@@ -26,7 +54,7 @@ export default function TeacherCourseManagementPage() {
             if (!token) return;
 
             try {
-                const res = await fetch(`http://127.0.0.1:8000/api/lecture/${courseId}/assignments/`, {
+                const res = await fetch(`http://127.0.0.1:8000/api/lectures/${courseId}/assignments/`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
 
@@ -93,7 +121,7 @@ export default function TeacherCourseManagementPage() {
                         <div className="flex flex-1 gap-6">
                             {/* 과제 목록 */}
                             <div className="w-1/3 border-r pr-4 space-y-2 overflow-y-auto max-h-[500px]">
-                                {assignments.map(task => (
+                                {assignments.length > 0 ? assignments.map(task => (
                                     <div
                                         key={task.id}
                                         onClick={() => setSelectedAssignment(task)}
@@ -102,7 +130,9 @@ export default function TeacherCourseManagementPage() {
                                     >
                                         {task.title}
                                     </div>
-                                ))}
+                                )) : (
+                                    <div className="text-center py-10 text-gray-400">등록된 과제가 없습니다.</div>
+                                )}
                             </div>
 
                             {/* 과제 상세 */}
@@ -111,7 +141,7 @@ export default function TeacherCourseManagementPage() {
                                     <>
                                         <h3 className="text-xl font-bold mb-2">{selectedAssignment.title}</h3>
                                         <p className="text-sm text-gray-500 mb-4">마감일: {new Date(selectedAssignment.deadline).toLocaleDateString()}</p>
-                                        <div className="bg-gray-50 p-4 rounded-lg text-sm text-gray-700 min-h-[150px] whitespace-pre-wrap">
+                                        <div className="bg-gray-50 p-4 rounded-lg text-sm text-gray-700 min-h-[150px] whitespace-pre-wrap border border-gray-100">
                                             {selectedAssignment.content}
                                         </div>
                                         <div className="mt-4 flex gap-2">
@@ -129,13 +159,13 @@ export default function TeacherCourseManagementPage() {
                                             </button>
                                         </div>
                                     </>
-                                ) : <div className="text-gray-400 text-center mt-20">선택된 과제가 없습니다.</div>}
+                                ) : <div className="text-gray-400 text-center mt-20">좌측에서 과제를 선택하세요.</div>}
                             </div>
                         </div>
                     </div>
                 )}
 
-                {/* 화면 2: 출결 확인 */}
+                {/* 화면 2: 출결 확인 및 입력 */}
                 {activeMenu === 'attendance' && (
                     <AttendanceManagement courseId={courseId as string} />
                 )}
@@ -145,159 +175,198 @@ export default function TeacherCourseManagementPage() {
     );
 }
 
-// 출결 관리 컴포넌트
+// [수정] 출결 관리 컴포넌트 (주차 선택 + 학생 목록 + 저장 기능)
 function AttendanceManagement({ courseId }: { courseId: string }) {
     const router = useRouter();
-    const [weeks, setWeeks] = useState<number[]>([]);
-    const [weekDates, setWeekDates] = useState<Record<number, string>>({});
-    const [loading, setLoading] = useState(true);
-    const [stats, setStats] = useState({
-        total: 0,
-        present: 0,
-        absent: 0,
-        late: 0,
-    });
+    const [selectedWeek, setSelectedWeek] = useState(1);
+    const [students, setStudents] = useState<Student[]>([]);
+    const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecords>({});
 
+    const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
+
+    // 1. 학생 목록 및 해당 주차 출결 데이터 불러오기
     useEffect(() => {
-        const fetchAttendanceData = async () => {
+        const fetchData = async () => {
+            setLoading(true);
             const token = localStorage.getItem('access_token');
-            
             if (!token) {
                 router.push('/login');
                 return;
             }
 
             try {
-                // 1~15주차까지 체크
-                const weekPromises = [];
-                for (let week = 1; week <= 15; week++) {
-                    weekPromises.push(
-                        fetch(`http://127.0.0.1:8000/api/lectures/${courseId}/attendance/week/${week}/`, {
-                            headers: { 'Authorization': `Bearer ${token}` }
-                        }).then(res => ({ week, res }))
-                    );
-                }
+                // (1) 수강생 목록 가져오기 (이름순 정렬됨)
+                const studentsRes = await fetch(`http://127.0.0.1:8000/api/lectures/${courseId}/students/`, {
+                    headers: { Authorization: `Bearer ${token}` },
+                });
+                if (!studentsRes.ok) throw new Error('수강생 목록 조회 실패');
+                const studentsData: Student[] = await studentsRes.json();
+                setStudents(studentsData);
 
-                const responses = await Promise.all(weekPromises);
-                const existingWeeks: number[] = [];
-                const dates: Record<number, string> = {};
-                
-                let totalPresent = 0;
-                let totalLate = 0;
-                let totalAbsent = 0;
-
-                for (const { week, res } of responses) {
-                    if (res.ok) {
-                        const data = await res.json();
-                        if (data.length > 0) {
-                            existingWeeks.push(week);
-                            
-                            // 첫 번째 학생의 출결 날짜 저장
-                            if (data[0].attendance_date) {
-                                dates[week] = new Date(data[0].attendance_date).toLocaleDateString('ko-KR');
-                            }
-
-                            // 통계 계산
-                            data.forEach((record: any) => {
-                                if (record.status === 'PRESENT') totalPresent++;
-                                else if (record.status === 'LATE') totalLate++;
-                                else if (record.status === 'ABSENT') totalAbsent++;
-                            });
-                        }
-                    }
-                }
-
-                setWeeks(existingWeeks);
-                setWeekDates(dates);
-                setStats({
-                    total: existingWeeks.length,
-                    present: totalPresent,
-                    late: totalLate,
-                    absent: totalAbsent,
+                // (2) 해당 주차 출결 데이터 가져오기
+                const attendanceRes = await fetch(`http://127.0.0.1:8000/api/lectures/${courseId}/attendance/week/${selectedWeek}/`, {
+                    headers: { Authorization: `Bearer ${token}` },
                 });
 
+                // 초기 출결 상태 설정 (기본값: PRESENT)
+                const newRecords: AttendanceRecords = {};
+                studentsData.forEach(s => newRecords[s.id] = 'PRESENT');
+
+                if (attendanceRes.ok) {
+                    const attendanceData = await attendanceRes.json();
+                    attendanceData.forEach((record: any) => {
+                        newRecords[record.student_id] = record.status;
+                    });
+                }
+                setAttendanceRecords(newRecords);
+
             } catch (err) {
-                console.error('출결 데이터 로딩 에러:', err);
+                console.error(err);
+                alert("데이터를 불러오는 중 오류가 발생했습니다.");
             } finally {
                 setLoading(false);
             }
         };
 
-        fetchAttendanceData();
-    }, [courseId, router]);
+        fetchData();
+    }, [courseId, selectedWeek, router]);
 
-    if (loading) {
-        return (
-            <div className="h-full flex justify-center items-center">
-                <div className="text-gray-500">로딩 중...</div>
-            </div>
-        );
-    }
+    // 출결 상태 변경 핸들러
+    const handleStatusChange = (studentId: number, status: AttendanceStatus) => {
+        setAttendanceRecords(prev => ({
+            ...prev,
+            [studentId]: status
+        }));
+    };
+
+    // 저장 핸들러
+    const handleSave = async () => {
+        if (!confirm(`${selectedWeek}주차 출결을 저장하시겠습니까?`)) return;
+
+        setSaving(true);
+        const token = localStorage.getItem('access_token');
+
+        const payload = Object.entries(attendanceRecords).map(([studentId, status]) => ({
+            student_id: Number(studentId),
+            status
+        }));
+
+        try {
+            const res = await fetch(`http://127.0.0.1:8000/api/lectures/${courseId}/attendance/week/${selectedWeek}/`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ attendances: payload })
+            });
+
+            if (res.ok) {
+                alert('저장되었습니다.');
+            } else {
+                alert('저장에 실패했습니다.');
+            }
+        } catch (err) {
+            console.error(err);
+            alert('오류가 발생했습니다.');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    if (loading && students.length === 0) return <div className="text-center py-20 text-gray-500">로딩 중...</div>;
 
     return (
-        <div className="h-full">
-            {/* 상단 요약 바 */}
-            <div className="flex items-center justify-between mb-6 text-sm bg-gray-50 p-3 rounded-lg border border-gray-200">
-                <div className="flex gap-4 font-medium text-gray-700">
-                    <span>총 주차 <strong className="text-gray-900">{stats.total}</strong></span>
-                    <span className="w-px h-4 bg-gray-300"></span>
-                    <span>출석 <strong className="text-blue-600">{stats.present}</strong></span>
-                    <span className="w-px h-4 bg-gray-300"></span>
-                    <span>결석 <strong className="text-red-600">{stats.absent}</strong></span>
-                    <span className="w-px h-4 bg-gray-300"></span>
-                    <span>지각 <strong className="text-orange-500">{stats.late}</strong></span>
-                </div>
-                <div className="flex gap-2 text-xs">
-                    <div className="flex items-center gap-1">
-                        <span className="w-2 h-2 rounded-full bg-blue-500"></span>출석
-                    </div>
-                    <div className="flex items-center gap-1">
-                        <span className="w-2 h-2 rounded-full bg-orange-500"></span>지각
-                    </div>
-                    <div className="flex items-center gap-1">
-                        <span className="w-2 h-2 rounded-full bg-red-500"></span>결석
-                    </div>
+        <div className="h-full flex flex-col">
+            <div className="flex justify-between items-center mb-6 pb-2 border-b border-gray-100">
+                <h2 className="text-2xl font-bold text-gray-900">출결 관리</h2>
+
+                {/* 주차 선택기 */}
+                <div className="flex items-center gap-2">
+                    <span className="text-sm font-bold text-gray-700">주차 선택:</span>
+                    <select
+                        value={selectedWeek}
+                        onChange={(e) => setSelectedWeek(Number(e.target.value))}
+                        className="border border-gray-300 rounded-md p-1.5 text-sm focus:border-sky-500 outline-none"
+                    >
+                        {Array.from({ length: 15 }, (_, i) => i + 1).map(w => (
+                            <option key={w} value={w}>{w}주차</option>
+                        ))}
+                    </select>
                 </div>
             </div>
 
-            {/* 출결 테이블 */}
-            <div className="border border-gray-200 rounded-lg overflow-hidden">
-                <table className="w-full text-center text-sm">
-                    <thead className="bg-gray-100 text-gray-700 font-semibold border-b border-gray-200">
-                        <tr>
-                            <th className="py-3 border-r border-gray-200">주차</th>
-                            <th className="py-3 border-r border-gray-200">날짜</th>
-                            <th className="py-3">관리</th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-200">
-                        {weeks.length > 0 ? weeks.map((week) => (
-                            <tr key={week} className="hover:bg-gray-50">
-                                <td className="py-4 font-medium text-gray-800 border-r border-gray-100">
-                                    {week} 주차
-                                </td>
-                                <td className="py-4 text-gray-600 border-r border-gray-100">
-                                    {weekDates[week] || '-'}
-                                </td>
-                                <td className="py-4">
-                                    <button
-                                        onClick={() => router.push(`/teacher/dashboard/courses/${courseId}/attendance?week=${week}`)}
-                                        className="bg-sky-600 text-white px-4 py-1.5 rounded text-xs font-bold hover:bg-sky-700"
-                                    >
-                                        출결 보기
-                                    </button>
-                                </td>
-                            </tr>
-                        )) : (
-                            <tr>
-                                <td colSpan={3} className="py-10 text-gray-400">
-                                    출결 기록이 없습니다.
-                                </td>
-                            </tr>
-                        )}
-                    </tbody>
-                </table>
-            </div>
+            {students.length === 0 ? (
+                <div className="text-center py-20 text-gray-400 bg-gray-50 rounded-lg">수강생이 없습니다.</div>
+            ) : (
+                <div className="flex-1 overflow-hidden flex flex-col">
+                    {/* 출결 테이블 */}
+                    <div className="border border-gray-200 rounded-lg overflow-hidden flex-1 overflow-y-auto">
+                        <table className="w-full text-sm">
+                            <thead className="bg-gray-50 border-b border-gray-200 text-gray-700 sticky top-0">
+                                <tr>
+                                    <th className="py-3 px-4 w-16 text-center">번호</th>
+                                    <th className="py-3 px-4 w-32 text-center">이름</th>
+                                    <th className="py-3 px-4 w-32 text-center">학번(ID)</th>
+                                    <th className="py-3 px-4 text-center">출결 상태</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-100 bg-white">
+                                {students.map((student, index) => (
+                                    <tr key={student.id} className="hover:bg-gray-50">
+                                        <td className="py-3 px-4 text-center text-gray-500">{index + 1}</td>
+                                        <td className="py-3 px-4 text-center font-medium text-gray-900">{student.name}</td>
+                                        <td className="py-3 px-4 text-center text-gray-500">{student.student_id}</td>
+                                        <td className="py-3 px-4 text-center">
+                                            <div className="flex justify-center gap-2">
+                                                <button
+                                                    onClick={() => handleStatusChange(student.id, 'PRESENT')}
+                                                    className={`px-3 py-1.5 rounded-md text-xs font-bold transition border ${attendanceRecords[student.id] === 'PRESENT'
+                                                            ? 'bg-blue-600 text-white border-blue-600'
+                                                            : 'bg-white text-gray-500 border-gray-200 hover:border-blue-400 hover:text-blue-600'
+                                                        }`}
+                                                >
+                                                    출석
+                                                </button>
+                                                <button
+                                                    onClick={() => handleStatusChange(student.id, 'LATE')}
+                                                    className={`px-3 py-1.5 rounded-md text-xs font-bold transition border ${attendanceRecords[student.id] === 'LATE'
+                                                            ? 'bg-orange-500 text-white border-orange-500'
+                                                            : 'bg-white text-gray-500 border-gray-200 hover:border-orange-400 hover:text-orange-500'
+                                                        }`}
+                                                >
+                                                    지각
+                                                </button>
+                                                <button
+                                                    onClick={() => handleStatusChange(student.id, 'ABSENT')}
+                                                    className={`px-3 py-1.5 rounded-md text-xs font-bold transition border ${attendanceRecords[student.id] === 'ABSENT'
+                                                            ? 'bg-red-600 text-white border-red-600'
+                                                            : 'bg-white text-gray-500 border-gray-200 hover:border-red-400 hover:text-red-600'
+                                                        }`}
+                                                >
+                                                    결석
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    {/* 하단 저장 버튼 */}
+                    <div className="mt-6 flex justify-end">
+                        <button
+                            onClick={handleSave}
+                            disabled={saving}
+                            className="bg-sky-600 text-white px-8 py-3 rounded-lg font-bold hover:bg-sky-700 shadow-sm transition disabled:opacity-50"
+                        >
+                            {saving ? '저장 중...' : '출결 내용 저장'}
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

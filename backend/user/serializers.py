@@ -9,7 +9,7 @@ User = get_user_model()
 class UserSignupSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['username', 'password', 'email', 'first_name', 'last_name', 'birth']
+        fields = ['username', 'password', 'email', 'first_name', 'last_name', 'birth', 'phone']
     
     def create(self, validated_data):
         user = User.objects.create_user(
@@ -18,7 +18,8 @@ class UserSignupSerializer(serializers.ModelSerializer):
             password=validated_data['password'],
             first_name=validated_data.get('first_name', ''),
             last_name=validated_data.get('last_name', ''),
-            birth=validated_data.get('birth', None)
+            birth=validated_data.get('birth', None),
+            phone=validated_data['phone']  
         )
         return user
 
@@ -33,3 +34,14 @@ class UserProfileSerializer(serializers.ModelSerializer):
 # 3. 비밀번호 찾기 (유지)
 class PasswordResetSerializer(serializers.Serializer):
     email = serializers.EmailField()
+
+
+class UserManageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = [
+            'id', 'username', 'first_name', 'last_name', 'email', 
+            'phone', 'birth', 'role', 
+            'digital_score', 'ai_score', 'making_score', 'computing_score'
+        ]
+        read_only_fields = ['id', 'username', 'first_name', 'last_name', 'email', 'phone', 'birth']

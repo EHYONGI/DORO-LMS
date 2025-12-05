@@ -89,15 +89,12 @@ def system_notice_create_api(request):
 def system_notice_update_delete_api(request, pk):
     """
     시스템 공지 수정 / 삭제 API
-
-    - PUT / PATCH : 내용 수정
-    - DELETE      : 삭제
-    - 간단히: 작성자 본인 또는 staff만 수정/삭제 가능하도록 예시 구현
     """
     notice = get_object_or_404(SystemNotice, pk=pk)
 
-    # 권한 체크 (원하면 더 엄격하게 바꿀 수 있음)
-    if request.user != notice.author and not request.user.is_staff:
+    # [수정] 권한 체크: 작성자 본인 OR 스태프 OR 매니저(role==0)
+    is_manager = getattr(request.user, 'role', None) == 0
+    if request.user != notice.author and not request.user.is_staff and not is_manager:
         return Response(
             {"detail": "이 공지를 수정/삭제할 권한이 없습니다."},
             status=status.HTTP_403_FORBIDDEN,
@@ -112,7 +109,7 @@ def system_notice_update_delete_api(request, pk):
             partial=partial,
         )
         if serializer.is_valid():
-            serializer.save()  # author는 그대로 두고 내용만 수정
+            serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -121,3 +118,9 @@ def system_notice_update_delete_api(request, pk):
     if request.method == 'DELETE':
         notice.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+@api_view(['GET'])
+def system_notice_list_api(request):
+    notices = SystemNotice.objects.all().order_by('-created_at')
+    serializer = SystemNoticeSerializer(notices, many=True)
+    return Response(serializer.data, status=status.HTTP_200_OK)

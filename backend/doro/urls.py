@@ -1,9 +1,10 @@
 # backend/doro/urls.py
+from django.conf import settings
+from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import path, include
 from lecture import views as lecture_views
 from notice import views as notice_views
-from community import views as community_views
 from user import views as user_views
 from consultations import views as consultation_views
 
@@ -22,10 +23,7 @@ urlpatterns = [
     path('api/dashboard/tasks/', lecture_views.my_task_list_api),
 
     # === 2. 커뮤니티 (Community) API ===
-    path('api/community/', community_views.community_list_create_api),
-    path('api/community/<int:pk>/', community_views.community_detail_api),
-    path('api/community/<int:pk>/comments/', community_views.comment_create_api),
-    path('api/community/me/', community_views.my_activity_api),
+    path('api/community/', include('community.urls')),
     
     # === 3. 강의 내부 기능 (학생용) ===
     path('api/lecture/<int:lecture_id>/notices/', lecture_views.course_notice_list_api),
@@ -46,17 +44,11 @@ urlpatterns = [
     path('api/teacher/applications/', lecture_views.teacher_applications_api),
     path('api/teacher/applications/<int:application_id>/', lecture_views.teacher_application_cancel_api),
 
-    # === 4. 수강신청 & 추천 시스템 ===
-    # lecture 앱 안의 나머지 URL들 (강의 목록, 수강신청 등)
     path('api/lectures/', include('lecture.urls')),
     
-    # === 5. 유저 (User) API ===
-    path('api/user/signup/', user_views.signup_api),
-    path('api/user/login/', user_views.login_api),
-    path('api/user/logout/', user_views.logout_api),
-    path('api/user/me/', user_views.user_profile_api),
+    path('api/user/', include('user.urls')),
+    path('api/notice/', include('notice.urls')),
 
-    # === 6. 상담(Consultation) API ===
     path('api/consultations/', include('consultations.urls')),
     
     # === 7. 수강신청 / 강의 관련 (courses prefix) ===
@@ -67,3 +59,6 @@ urlpatterns = [
     # 수강 취소
     path('api/lectures/enrollments/<int:enrollment_id>/', lecture_views.cancel_enrollment_api),
 ]
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

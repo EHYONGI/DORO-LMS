@@ -1,3 +1,4 @@
+// app/teacher/dashboard/page.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -135,7 +136,10 @@ export default function TeacherDashboardPage() {
                         {recentNotices.length > 0 ? recentNotices.map((notice) => (
                             <div
                                 key={`${notice.type}-${notice.id}`}
-                                onClick={() => router.push(notice.type === 'system' ? `/dashboard/notices/${notice.id}` : `/teacher/dashboard/courses/${notice.lecture}/notices/${notice.id}`)}
+                                onClick={() => router.push(notice.type === 'system'
+                                    ? `/teacher/dashboard/notices/${notice.id}` // [수정됨] 강사 전용 경로로 수정
+                                    : `/teacher/dashboard/courses/${notice.lecture}/notices/${notice.id}`
+                                )}
                                 className="p-3 rounded-lg hover:bg-gray-50 transition border border-gray-100 cursor-pointer group"
                             >
                                 <div className="flex justify-between text-xs mb-1.5">

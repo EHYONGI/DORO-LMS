@@ -1,6 +1,7 @@
 # backend/lecture/views.py
 
 from rest_framework.decorators import api_view, permission_classes
+from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
@@ -11,7 +12,7 @@ from datetime import date
 # 같은 앱(lecture)의 모델들
 from .models import (
     Lecture, Assignment, Attendance, Enrollment, LectureNotice, 
-    Wishlist, LectureRecommendation, LectureApplication
+    Wishlist, LectureRecommendation, LectureApplication, Submission
 )
 
 # user 앱의 모델
@@ -30,7 +31,8 @@ from .serializers import (
     LectureRecommendationResponseSerializer,
     EnrollmentCreateSerializer,
     UserCompetencySerializer,
-    LectureDetailSerializer
+    LectureDetailSerializer,
+    SubmissionSerializer
 )
 
 # 추천 시스템 서비스
@@ -520,43 +522,35 @@ def lecture_assignments_api(request, lecture_id):
 @permission_classes([IsAuthenticated])
 def lecture_students_api(request, lecture_id):
     """
-    특정 강의의 수강생 목록 조회 (강사 제외)
+    특정 강의의 수강생 목록 조회 (강사 제외, 이름순 정렬)
     """
     try:
         lecture = Lecture.objects.get(id=lecture_id)
     except Lecture.DoesNotExist:
         return Response({'error': '강의를 찾을 수 없습니다.'}, status=status.HTTP_404_NOT_FOUND)
     
-    # 강사 권한 확인
     if lecture.instructor != request.user:
         return Response({'error': '권한이 없습니다.'}, status=status.HTTP_403_FORBIDDEN)
     
-    # 해당 강의를 수강하는 학생들 조회 (강사 제외)
     enrollments = Enrollment.objects.filter(lecture=lecture).select_related('student')
     
     students = []
     for enrollment in enrollments:
         student = enrollment.student
-        
-        # ✅ 강사는 제외 (강사 본인이 enrollment에 있어도 제외)
         if student == lecture.instructor:
             continue
         
-        # ✅ User role이 있다면 student인 경우만 포함 (선택사항)
-        # if hasattr(student, 'role') and student.role != 'student':
-        #     continue
-        
-        # 학생 이름 처리
-        full_name = f"{student.last_name}{student.first_name}".strip()
-        if not full_name:
-            full_name = student.username
+        full_name = f"{student.last_name}{student.first_name}".strip() or student.username
         
         students.append({
             'id': student.id,
             'name': full_name,
             'username': student.username,
-            'student_id': student.username,  # 학번
+            'student_id': student.username, 
         })
+    
+    # [수정] 이름순 정렬
+    students.sort(key=lambda x: x['name'])
     
     return Response(students)
 
@@ -896,4 +890,276 @@ def teacher_application_cancel_api(request, application_id):
     
     return Response({
         'message': f'{lecture_name} 지원이 취소되었습니다.'
+    }, status=status.HTTP_200_OK)
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def manager_create_lecture_api(request):
+    """[매니저] 강의 개설"""
+    if request.user.role != 0:
+        return Response({'error': '관리자 권한이 필요합니다.'}, status=status.HTTP_403_FORBIDDEN)
+    
+    data = request.data.copy()
+    data['status'] = 'RECRUITING'
+    
+    serializer = LectureSerializer(data=data)
+    if serializer.is_valid():
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def manager_lecture_list_api(request):
+    """[매니저] 전체 강의 목록 조회"""
+    if request.user.role != 0:
+        return Response({'error': '관리자 권한이 필요합니다.'}, status=status.HTTP_403_FORBIDDEN)
+    
+    lectures = Lecture.objects.all().order_by('-created_at')
+    serializer = LectureSerializer(lectures, many=True)
+    return Response(serializer.data)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def manager_lecture_applications_api(request, lecture_id):
+    """[매니저] 특정 강의의 강사 지원자 목록 조회"""
+    if request.user.role != 0:
+        return Response({'error': '관리자 권한이 필요합니다.'}, status=status.HTTP_403_FORBIDDEN)
+    
+    applications = LectureApplication.objects.filter(lecture_id=lecture_id).select_related('instructor').order_by('-created_at')
+    
+    result = []
+    for app in applications:
+        result.append({
+            'id': app.id,
+            'instructor_name': app.instructor.username,
+            'instructor_full_name': f"{app.instructor.last_name}{app.instructor.first_name}",
+            'message': app.message,
+            'status': app.status,
+            'created_at': app.created_at
+        })
+    return Response(result)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def manager_application_process_api(request, application_id):
+    """[매니저] 강사 지원 승인/반려 처리"""
+    if request.user.role != 0:
+        return Response({'error': '관리자 권한이 필요합니다.'}, status=status.HTTP_403_FORBIDDEN)
+    
+    application = get_object_or_404(LectureApplication, id=application_id)
+    action = request.data.get('action')
+    lecture = application.lecture
+    
+    if action == 'APPROVE':
+        # 이미 강사가 있는 경우 체크 (선택 사항)
+        if lecture.instructor:
+            return Response({'error': '이미 강사가 배정된 강의입니다.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # 강사 배정 및 상태 변경
+        lecture.instructor = application.instructor
+        lecture.status = 'OPEN' 
+        lecture.save()
+        
+        # 지원서 승인 처리
+        application.status = 'APPROVED'
+        application.save()
+        
+        # (옵션) 다른 대기중인 지원서는 자동으로 반려할 수도 있음
+        
+        return Response({'message': '강사가 배정되었습니다.'})
+        
+    elif action == 'REJECT':
+        application.status = 'REJECTED'
+        application.save()
+        return Response({'message': '지원이 반려되었습니다.'})
+        
+    return Response({'error': '잘못된 요청입니다.'}, status=status.HTTP_400_BAD_REQUEST)
+
+
+# --- [추가된 기능] 강의 삭제 & 배정 취소 ---
+
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+def manager_lecture_delete_api(request, lecture_id):
+    """[매니저] 강의 삭제"""
+    if request.user.role != 0:
+        return Response({'error': '관리자 권한이 필요합니다.'}, status=status.HTTP_403_FORBIDDEN)
+    
+    lecture = get_object_or_404(Lecture, id=lecture_id)
+    lecture.delete()
+    
+    return Response({'message': '강의가 삭제되었습니다.'}, status=status.HTTP_200_OK)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def manager_lecture_cancel_instructor_api(request, lecture_id):
+    """[매니저] 강사 배정 취소 (반려 처리)"""
+    if request.user.role != 0:
+        return Response({'error': '관리자 권한이 필요합니다.'}, status=status.HTTP_403_FORBIDDEN)
+    
+    lecture = get_object_or_404(Lecture, id=lecture_id)
+    
+    if not lecture.instructor:
+        return Response({'error': '배정된 강사가 없습니다.'}, status=status.HTTP_400_BAD_REQUEST)
+    
+    # 1. 현재 배정된 강사의 승인된 지원서(Application) 찾기
+    approved_app = LectureApplication.objects.filter(
+        lecture=lecture, 
+        instructor=lecture.instructor, 
+        status='APPROVED'
+    ).first()
+    
+    # 2. 지원서 상태를 'REJECTED'(반려) 또는 'PENDING'(대기)로 변경
+    # 여기서는 '반려' 의미로 REJECTED 처리
+    if approved_app:
+        approved_app.status = 'REJECTED'
+        approved_app.save()
+    
+    # 3. 강의 상태 초기화 (강사 제거, 모집중으로 변경)
+    lecture.instructor = None
+    lecture.status = 'RECRUITING'
+    lecture.save()
+    
+    return Response({'message': '강사 배정이 취소되었습니다.'}, status=status.HTTP_200_OK)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def manager_lecture_close_enrollment_api(request, lecture_id):
+    """[매니저] 강의 수강신청 마감 (상태를 IN_PROGRESS로 변경)"""
+    if request.user.role != 0:
+        return Response({'error': '관리자 권한이 필요합니다.'}, status=status.HTTP_403_FORBIDDEN)
+    
+    lecture = get_object_or_404(Lecture, id=lecture_id)
+    
+    # 강사 배정 여부 확인
+    if not lecture.instructor:
+        return Response({'error': '배정된 강사가 없는 강의는 마감할 수 없습니다.'}, status=status.HTTP_400_BAD_REQUEST)
+    
+    # 이미 마감되었거나 종료된 경우 확인 (선택 사항)
+    if lecture.status not in ['OPEN']:
+        return Response({'error': '수강신청 진행 중인 강의만 마감할 수 있습니다.'}, status=status.HTTP_400_BAD_REQUEST)
+    
+    # 상태 변경: OPEN -> IN_PROGRESS
+    lecture.status = 'IN_PROGRESS'
+    lecture.save()
+    
+    return Response({'message': '수강신청이 마감되었습니다. 수업이 시작됩니다.'}, status=status.HTTP_200_OK)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def teacher_assignment_submissions_api(request, assignment_id):
+    """
+    [강사] 특정 과제에 대한 학생들의 제출 현황 조회
+    """
+    assignment = get_object_or_404(Assignment, id=assignment_id)
+    
+    # 권한 체크: 해당 과제의 강의 담당자인지 확인
+    if assignment.lecture.instructor != request.user:
+        return Response({'error': '권한이 없습니다.'}, status=status.HTTP_403_FORBIDDEN)
+    
+    # 해당 과제의 모든 제출물 조회 (최신순)
+    submissions = Submission.objects.filter(assignment=assignment).select_related('student').order_by('-submitted_at')
+    
+    serializer = SubmissionSerializer(submissions, many=True)
+    return Response(serializer.data)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def my_submission_api(request, assignment_id):
+    """
+    특정 과제에 대한 내 제출 내역 조회
+    """
+    try:
+        assignment = Assignment.objects.get(id=assignment_id)
+    except Assignment.DoesNotExist:
+        return Response({'error': '과제를 찾을 수 없습니다.'}, status=status.HTTP_404_NOT_FOUND)
+
+    try:
+        # 내 제출 내역이 있는지 확인
+        submission = Submission.objects.get(assignment=assignment, student=request.user)
+        serializer = SubmissionSerializer(submission)
+        return Response(serializer.data)
+    except Submission.DoesNotExist:
+        # 제출 내역이 없으면 204 No Content 반환 (프론트엔드 처리용)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def submit_assignment_api(request, assignment_id):
+    """
+    과제 제출 및 수정
+    - 이미 제출한 경우 내용을 덮어씁니다 (재제출)
+    """
+    try:
+        assignment = Assignment.objects.get(id=assignment_id)
+    except Assignment.DoesNotExist:
+        return Response({'error': '과제를 찾을 수 없습니다.'}, status=status.HTTP_404_NOT_FOUND)
+
+    content = request.data.get('content')
+    file_obj = request.FILES.get('file')
+
+    if not content:
+        return Response({'error': '내용을 입력해주세요.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    # get_or_create를 사용하여 생성 또는 조회
+    submission, created = Submission.objects.get_or_create(
+        assignment=assignment,
+        student=request.user,
+        defaults={
+            'content': content,
+            'file': file_obj  # 파일 저장
+        }
+    )
+
+    # 이미 존재한다면(재제출) 내용 업데이트
+    if not created:
+        submission.content = content
+        if file_obj:
+            submission.file = file_obj
+        submission.submitted_at = timezone.now()
+        submission.save()
+
+    serializer = SubmissionSerializer(submission)
+    return Response({
+        'message': '과제가 성공적으로 제출되었습니다.',
+        'data': serializer.data
+    }, status=status.HTTP_200_OK)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def grade_submission_api(request, submission_id):
+    """
+    [강사] 학생 제출물 채점 (점수 및 피드백 등록)
+    """
+    submission = get_object_or_404(Submission, id=submission_id)
+    
+    # 권한 체크: 해당 강의의 담당 강사인지 확인
+    if submission.assignment.lecture.instructor != request.user:
+        return Response({'error': '권한이 없습니다.'}, status=status.HTTP_403_FORBIDDEN)
+
+    grade = request.data.get('grade')
+    feedback = request.data.get('feedback')
+
+    # 점수와 피드백 업데이트
+    if grade is not None:
+        submission.grade = grade
+    if feedback is not None:
+        submission.feedback = feedback
+    
+    # 채점 일시 기록
+    submission.graded_at = timezone.now()
+    submission.save()
+
+    return Response({
+        'message': '채점이 완료되었습니다.',
+        'data': SubmissionSerializer(submission).data
     }, status=status.HTTP_200_OK)

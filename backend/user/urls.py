@@ -9,4 +9,7 @@ urlpatterns = [
     path("password/reset/", views.find_pw_api),
     path('me/', views.user_profile_api),
     path('overview/', views.user_overview_api),
+
+    path('manager/users/', views.manager_user_list_api),       # 전체 유저 리스트
+    path('manager/users/<int:pk>/', views.manager_user_update_api), # 특정 유저 수정
 ]
