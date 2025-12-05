@@ -152,7 +152,7 @@ export default function DashboardPage() {
                         {recentNotices.length > 0 ? recentNotices.map((notice) => (
                             <div
                                 key={`${notice.type}-${notice.id}`}
-                                onClick={() => router.push(notice.type === 'system' ? `/student/dashboard/notices/${notice.id}` : `/student/dashboard/courses/${notice.lecture}/notices/${notice.id}`)}
+                                onClick={() => router.push(notice.type === 'system' ? `/dashboard/notices/${notice.id}` : `/dashboard/courses/${notice.lecture}/notices/${notice.id}`)}
                                 className="p-3 rounded-lg hover:bg-gray-50 transition border border-gray-100 cursor-pointer group"
                             >
                                 <div className="flex justify-between text-xs mb-1.5">

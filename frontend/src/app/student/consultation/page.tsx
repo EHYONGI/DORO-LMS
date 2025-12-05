@@ -104,23 +104,13 @@ export default function ConsultationPage() {
         const token = localStorage.getItem('access_token');
 
         try {
-            // ✅ 백엔드에서 기대하는 필드 이름으로 변환해서 보내기
-            const payload = {
-                instructor: Number(formData.instructor),      // 문자열 → 숫자 PK
-                method: formData.method,                     // 그대로
-                consultation_type: formData.type,            // type → consultation_type
-                preferred_date: formData.date,               // date → preferred_date
-                topic: formData.topic,
-                content: formData.content,
-            };
-
-            const res = await fetch('http://127.0.0.1:8000/api/consult/request/', {   // ✅ 슬래시도 추가
+            const res = await fetch('http://127.0.0.1:8000/api/consult/request', {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify(payload)
+                body: JSON.stringify(formData)
             });
 
             if (res.ok) {
@@ -129,13 +119,10 @@ export default function ConsultationPage() {
                 setFormData({ instructor: '', method: '', date: '', type: '', topic: '', content: '' });
                 setFilters({ type: '', method: '', instructor: '', status: '' });
             } else {
-                const text = await res.text();
-                console.error('consult request error', res.status, text);
                 alert("신청 정보를 확인해주세요.");
             }
         } catch (err) {
             console.error(err);
-            alert('서버 오류가 발생했습니다.');
         }
     };
 
@@ -161,7 +148,6 @@ export default function ConsultationPage() {
 
     return (
         <div className="max-w-7xl mx-auto py-10 px-4 sm:px-6 lg:px-8">
-            <h1 className="text-2xl font-bold text-gray-900 mb-6">상담페이지</h1>
 
             {/* 탭 버튼 */}
             <div className="flex gap-2 mb-6 border-b border-gray-300 pb-1">

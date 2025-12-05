@@ -16,7 +16,7 @@ def consultation_list_create_api(request):
     
     if request.method == 'GET':
         # 1. 기본 쿼리셋: 내가 신청한 상담 전체 (최신순)
-        queryset = Consultation.objects.filter(student=request.user).order_by('-id')
+        queryset = Consultation.objects.filter(student=request.user).order_by('-created_at')
 
         # 2. 필터링 적용 (쿼리 파라미터가 있을 경우)
         status_param = request.query_params.get('status')
@@ -38,18 +38,12 @@ def consultation_list_create_api(request):
         return Response(serializer.data)
 
     elif request.method == 'POST':
-    # 프론트에서 온 body만 사용 (student는 여기서 강제로 넣어줌)
+        # ... (기존 POST 로직 그대로 유지) ...
         serializer = ConsultationSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-
-        # 🔥 핵심: student를 read_only로 두고, 여기서 명시적으로 설정
-        consultation = serializer.save(student=request.user)
-
-        return Response(ConsultationSerializer(consultation).data,
-                    status=status.HTTP_201_CREATED)
-
-
-
+        if serializer.is_valid():
+            serializer.save(student=request.user)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 # 2. 강사 목록 조회 (수정됨: 내 강의 강사만)
 @api_view(['GET'])
@@ -93,58 +87,3 @@ def consultation_detail_api(request, pk):
     elif request.method == 'DELETE':
         consultation.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
-
-# ========== 강사용 API (추가) ==========
-
-# 강사용: 내게 온 상담 신청 목록 조회
-@api_view(['GET'])
-@permission_classes([IsAuthenticated])
-def instructor_consultation_list_api(request):
-    """강사용: 내게 신청된 상담 목록 조회 (필터링 포함)"""
-    
-    # 1. 기본 쿼리셋: 나에게 신청된 상담 전체 (최신순)
-    queryset = Consultation.objects.filter(instructor=request.user).order_by('-created_at')
-
-    # 2. 필터링 적용
-    status_param = request.query_params.get('status')
-    type_param = request.query_params.get('type')
-    method_param = request.query_params.get('method')
-    student_param = request.query_params.get('student')
-
-    if status_param:
-        queryset = queryset.filter(status=status_param)
-    if type_param:
-        queryset = queryset.filter(consultation_type=type_param)
-    if method_param:
-        queryset = queryset.filter(method=method_param)
-    if student_param:
-        queryset = queryset.filter(student__username__icontains=student_param)
-
-    # 3. 결과 반환
-    serializer = ConsultationSerializer(queryset, many=True)
-    return Response(serializer.data)
-
-
-# 강사용: 상담 상태 변경 (승인/거절/완료)
-@api_view(['PATCH'])
-@permission_classes([IsAuthenticated])
-def update_consultation_status_api(request, pk):
-    consultation = get_object_or_404(Consultation, pk=pk)
-
-    if consultation.instructor != request.user:
-        return Response({"error": "권한이 없습니다."}, status=status.HTTP_403_FORBIDDEN)
-
-    new_status = request.data.get('status')
-
-    if new_status not in ['APPROVED', 'CANCELED', 'COMPLETED']:
-        return Response({"error": "유효하지 않은 상태입니다."}, status=status.HTTP_400_BAD_REQUEST)
-
-    # 🔥 상담일시 설정 가능하도록 추가
-    scheduled_at = request.data.get('scheduled_at')
-    if scheduled_at:
-        consultation.scheduled_at = scheduled_at
-
-    consultation.status = new_status
-    consultation.save()
-
-    return Response(ConsultationSerializer(consultation).data)

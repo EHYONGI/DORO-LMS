@@ -31,25 +31,20 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
-    # Django 기본 앱
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    
-    # Third party apps
+    'user.apps.UserConfig',
+    'community.apps.CommunityConfig',
+    'lecture.apps.LectureConfig',
+    'notice.apps.NoticeConfig',
+    'consultations.apps.ConsultationsConfig',
+
     'rest_framework',
-    'rest_framework_simplejwt',
     'corsheaders',
-    
-    # Local apps - 각각 한 번씩만!
-    'user',
-    'lecture',
-    'notice',
-    'community',
-    'consultations',
 ]
 
 MIDDLEWARE = [

@@ -1,4 +1,4 @@
-// app/student/dashboard/courses/[id]/notices/page.tsx
+// app/dashboard/courses/[id]/notices/page.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -44,6 +44,7 @@ export default function CourseNoticesPage() {
     };
 
     return (
+        // flex 레이아웃 제거하고 심플한 컨테이너로 변경
         <div className="min-h-[600px] border border-gray-200 rounded-lg shadow-sm bg-white p-8">
             <h2 className="text-xl font-bold text-gray-800 mb-6">공지사항</h2>
 
@@ -68,7 +69,7 @@ export default function CourseNoticesPage() {
                                     </td>
                                     <td className="py-4 pl-4">
                                         <Link
-                                            href={`/student/dashboard/courses/${courseId}/notices/${notice.id}`}
+                                            href={`/dashboard/courses/${courseId}/notices/${notice.id}`}
                                             className="text-gray-800 hover:text-sky-600 font-medium block"
                                         >
                                             {notice.title}

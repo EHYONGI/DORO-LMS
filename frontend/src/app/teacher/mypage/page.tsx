@@ -1,10 +1,10 @@
-// app/instructor/mypage/page.tsx
+// app/teacher/mypage/page.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
-// 데이터 타입 정의
+// 데이터 타입 정의 (학생용과 동일 구조 유지)
 interface UserProfile {
     username: string;
     email: string;
@@ -20,7 +20,11 @@ interface Lecture {
     name: string;
     instructor_name: string;
     status: 'RECRUITING' | 'OPEN' | 'IN_PROGRESS' | 'CLOSED';
-    created_at?: string;
+}
+
+interface Enrollment {
+    lecture: Lecture;
+    joined_at: string;
 }
 
 interface MyActivity {
@@ -28,12 +32,12 @@ interface MyActivity {
     comments: { id: number; content: string; thread_title: string; created_at: string }[];
 }
 
-export default function MyPage() {
+export default function TeacherMyPage() {
     const router = useRouter();
     const [activeTab, setActiveTab] = useState<'profile' | 'courses' | 'activity'>('profile');
 
     const [profile, setProfile] = useState<UserProfile | null>(null);
-    const [lectures, setLectures] = useState<Lecture[]>([]);
+    const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
     const [activity, setActivity] = useState<MyActivity>({ threads: [], comments: [] });
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -55,12 +59,12 @@ export default function MyPage() {
             const headers = { 'Authorization': `Bearer ${token}` };
 
             try {
-                console.log('Fetching user data...');
-                
-                // 1. 내 정보 가져오기
+                console.log('Fetching teacher data...');
+
+                // 1. 내 정보 가져오기 (강사/학생 공용 엔드포인트)
                 const userRes = await fetch('http://127.0.0.1:8000/api/user/me/', { headers });
                 console.log('User response status:', userRes.status);
-                
+
                 if (userRes.ok) {
                     const userData = await userRes.json();
                     console.log('User data:', userData);
@@ -72,22 +76,23 @@ export default function MyPage() {
                     setError(`사용자 정보 로드 실패: ${userRes.status}`);
                 }
 
-                // 2. 담당 강의 가져오기
-                const courseRes = await fetch('http://127.0.0.1:8000/api/teacher/my-courses/', { headers });
+                // 2. 담당 강의 / 수강 내역 가져오기
+                //    백엔드에서 role에 따라 "내 강의"를 돌려주도록 구현되어 있다면 그대로 사용
+                const courseRes = await fetch('http://127.0.0.1:8000/api/dashboard/my-courses/', { headers });
                 console.log('Course response status:', courseRes.status);
-                
+
                 if (courseRes.ok) {
                     const courseData = await courseRes.json();
                     console.log('Course data:', courseData);
-                    setLectures(courseData);
+                    setEnrollments(courseData);
                 } else {
                     console.error('Course fetch failed:', courseRes.status);
                 }
 
-                // 3. 활동 내역 가져오기
+                // 3. 활동 내역 가져오기 (강사가 쓴 글/댓글)
                 const activityRes = await fetch('http://127.0.0.1:8000/api/community/me/', { headers });
                 console.log('Activity response status:', activityRes.status);
-                
+
                 if (activityRes.ok) {
                     const activityData = await activityRes.json();
                     console.log('Activity data:', activityData);
@@ -117,21 +122,21 @@ export default function MyPage() {
                 method: 'PUT',
                 headers: {
                     'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
                 },
-                body: JSON.stringify(editData)
+                body: JSON.stringify(editData),
             });
 
             if (res.ok) {
-                alert("회원 정보가 수정되었습니다.");
+                alert('회원 정보가 수정되었습니다.');
                 setProfile(editData);
                 setEditMode(false);
             } else {
-                alert("수정에 실패했습니다.");
+                alert('수정에 실패했습니다.');
             }
         } catch (err) {
             console.error(err);
-            alert("서버 오류가 발생했습니다.");
+            alert('서버 오류가 발생했습니다.');
         }
     };
 
@@ -153,11 +158,11 @@ export default function MyPage() {
             <div className="flex items-center justify-center min-h-screen">
                 <div className="text-center max-w-md">
                     <p className="text-red-500 mb-4">{error}</p>
-                    <button 
-                        onClick={() => router.push('/dashboard')} 
+                    <button
+                        onClick={() => router.push('/teacher/dashboard')}
                         className="px-4 py-2 bg-sky-600 text-white rounded hover:bg-sky-700"
                     >
-                        대시보드로 돌아가기
+                        강사 대시보드로 돌아가기
                     </button>
                 </div>
             </div>
@@ -171,17 +176,17 @@ export default function MyPage() {
                 <div className="text-center max-w-md">
                     <p className="text-red-500 mb-4">프로필 정보를 불러올 수 없습니다.</p>
                     <div className="flex gap-2 justify-center">
-                        <button 
-                            onClick={() => window.location.reload()} 
+                        <button
+                            onClick={() => window.location.reload()}
                             className="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
                         >
                             다시 시도
                         </button>
-                        <button 
-                            onClick={() => router.push('/dashboard')} 
+                        <button
+                            onClick={() => router.push('/teacher/dashboard')}
                             className="px-4 py-2 bg-sky-600 text-white rounded hover:bg-sky-700"
                         >
-                            대시보드로 이동
+                            강사 대시보드로 이동
                         </button>
                     </div>
                 </div>
@@ -190,59 +195,91 @@ export default function MyPage() {
     }
 
     // 관심분야 체크박스용 옵션
-    const interestOptions = ["인공지능", "로봇공학", "코딩", "사물인터넷(IoT)", "3D프린팅", "드론"];
+    const interestOptions = ['인공지능', '로봇공학', '코딩', '사물인터넷(IoT)', '3D프린팅', '드론'];
 
     return (
         <div className="flex min-h-[600px] border border-gray-200 rounded-lg shadow-sm bg-white max-w-7xl mx-auto my-8">
-
             {/* === 좌측 사이드바 === */}
             <div className="w-48 lg:w-64 border-r border-gray-200 bg-gray-50 flex flex-col shrink-0">
                 <div className="p-6 border-b border-gray-200">
-                    <h2 className="font-bold text-xl text-gray-800">마이페이지</h2>
-                    <p className="text-xs text-gray-500 mt-1">{profile.last_name}{profile.first_name}님 환영합니다.</p>
+                    <h2 className="font-bold text-xl text-gray-800">강사 마이페이지</h2>
+                    <p className="text-xs text-gray-500 mt-1">
+                        {profile.last_name}
+                        {profile.first_name}
+                        님, 오늘도 좋은 수업 되세요.
+                    </p>
                 </div>
                 <nav className="flex-grow p-4 space-y-1">
                     <button
                         onClick={() => setActiveTab('profile')}
                         className={`w-full text-left px-4 py-3 text-sm font-medium rounded-lg transition flex items-center gap-3
-                            ${activeTab === 'profile' ? 'bg-white text-sky-600 shadow-sm border border-gray-100' : 'text-gray-600 hover:bg-gray-100'}`}
+                            ${
+                                activeTab === 'profile'
+                                    ? 'bg-white text-sky-600 shadow-sm border border-gray-100'
+                                    : 'text-gray-600 hover:bg-gray-100'
+                            }`}
                     >
                         <span className="text-lg">👤</span> 개인정보 수정
                     </button>
                     <button
                         onClick={() => setActiveTab('activity')}
                         className={`w-full text-left px-4 py-3 text-sm font-medium rounded-lg transition flex items-center gap-3
-                            ${activeTab === 'activity' ? 'bg-white text-sky-600 shadow-sm border border-gray-100' : 'text-gray-600 hover:bg-gray-100'}`}
+                            ${
+                                activeTab === 'activity'
+                                    ? 'bg-white text-sky-600 shadow-sm border border-gray-100'
+                                    : 'text-gray-600 hover:bg-gray-100'
+                            }`}
                     >
                         <span className="text-lg">📝</span> 내가 쓴 글 / 댓글
                     </button>
                     <button
                         onClick={() => setActiveTab('courses')}
                         className={`w-full text-left px-4 py-3 text-sm font-medium rounded-lg transition flex items-center gap-3
-                            ${activeTab === 'courses' ? 'bg-white text-sky-600 shadow-sm border border-gray-100' : 'text-gray-600 hover:bg-gray-100'}`}
+                            ${
+                                activeTab === 'courses'
+                                    ? 'bg-white text-sky-600 shadow-sm border border-gray-100'
+                                    : 'text-gray-600 hover:bg-gray-100'
+                            }`}
                     >
                         <span className="text-lg">📚</span> 담당 강의 모아보기
                     </button>
                 </nav>
                 <div className="p-4 border-t border-gray-200">
-                    <p className="text-xs text-gray-400 text-center">DORO LMS v1.0</p>
+                    <p className="text-xs text-gray-400 text-center">DORO LMS for Teacher v1.0</p>
                 </div>
             </div>
 
             {/* === 우측 메인 콘텐츠 === */}
             <div className="flex-1 p-10 overflow-y-auto h-[600px]">
-
                 {/* [탭 1] 프로필 관리 */}
                 {activeTab === 'profile' && editData && (
                     <div className="max-w-2xl">
                         <div className="flex justify-between items-center mb-8 border-b border-gray-200 pb-4">
                             <h3 className="text-2xl font-bold text-gray-800">프로필 관리</h3>
                             {!editMode ? (
-                                <button onClick={() => setEditMode(true)} className="px-4 py-2 bg-gray-100 text-gray-600 rounded hover:bg-gray-200 text-sm font-bold">수정하기</button>
+                                <button
+                                    onClick={() => setEditMode(true)}
+                                    className="px-4 py-2 bg-gray-100 text-gray-600 rounded hover:bg-gray-200 text-sm font-bold"
+                                >
+                                    수정하기
+                                </button>
                             ) : (
                                 <div className="flex gap-2">
-                                    <button onClick={() => { setEditMode(false); setEditData(profile); }} className="px-4 py-2 border border-gray-300 rounded text-sm hover:bg-gray-50">취소</button>
-                                    <button onClick={handleSaveProfile} className="px-4 py-2 bg-sky-600 text-white rounded text-sm font-bold hover:bg-sky-700">저장</button>
+                                    <button
+                                        onClick={() => {
+                                            setEditMode(false);
+                                            setEditData(profile);
+                                        }}
+                                        className="px-4 py-2 border border-gray-300 rounded text-sm hover:bg-gray-50"
+                                    >
+                                        취소
+                                    </button>
+                                    <button
+                                        onClick={handleSaveProfile}
+                                        className="px-4 py-2 bg-sky-600 text-white rounded text-sm font-bold hover:bg-sky-700"
+                                    >
+                                        저장
+                                    </button>
                                 </div>
                             )}
                         </div>
@@ -259,7 +296,9 @@ export default function MyPage() {
                                         type="text"
                                         disabled={!editMode}
                                         value={editData.last_name || ''}
-                                        onChange={(e) => setEditData({ ...editData, last_name: e.target.value })}
+                                        onChange={(e) =>
+                                            setEditData({ ...editData, last_name: e.target.value })
+                                        }
                                         className="border border-gray-300 rounded p-2 w-20 bg-gray-50 disabled:text-gray-500"
                                         placeholder="성"
                                     />
@@ -267,7 +306,9 @@ export default function MyPage() {
                                         type="text"
                                         disabled={!editMode}
                                         value={editData.first_name || ''}
-                                        onChange={(e) => setEditData({ ...editData, first_name: e.target.value })}
+                                        onChange={(e) =>
+                                            setEditData({ ...editData, first_name: e.target.value })
+                                        }
                                         className="border border-gray-300 rounded p-2 w-32 bg-gray-50 disabled:text-gray-500"
                                         placeholder="이름"
                                     />
@@ -279,7 +320,9 @@ export default function MyPage() {
                                     type="email"
                                     disabled={!editMode}
                                     value={editData.email || ''}
-                                    onChange={(e) => setEditData({ ...editData, email: e.target.value })}
+                                    onChange={(e) =>
+                                        setEditData({ ...editData, email: e.target.value })
+                                    }
                                     className="col-span-3 border border-gray-300 rounded p-2 w-full disabled:bg-gray-100 disabled:text-gray-500"
                                 />
                             </div>
@@ -289,7 +332,9 @@ export default function MyPage() {
                                     type="text"
                                     disabled={!editMode}
                                     value={editData.phone || ''}
-                                    onChange={(e) => setEditData({ ...editData, phone: e.target.value })}
+                                    onChange={(e) =>
+                                        setEditData({ ...editData, phone: e.target.value })
+                                    }
                                     className="col-span-3 border border-gray-300 rounded p-2 w-full disabled:bg-gray-100 disabled:text-gray-500"
                                     placeholder="010-0000-0000"
                                 />
@@ -300,19 +345,29 @@ export default function MyPage() {
                                 <label className="text-sm font-bold text-gray-600 pt-1">관심분야</label>
                                 <div className="col-span-3 grid grid-cols-2 gap-2">
                                     {interestOptions.map((option) => (
-                                        <label key={option} className="flex items-center gap-2 cursor-pointer">
+                                        <label
+                                            key={option}
+                                            className="flex items-center gap-2 cursor-pointer"
+                                        >
                                             <input
                                                 type="checkbox"
                                                 disabled={!editMode}
                                                 checked={editData.interests?.includes(option) || false}
                                                 onChange={(e) => {
-                                                    let currentInterests = editData.interests ? editData.interests.split(',') : [];
+                                                    let currentInterests = editData.interests
+                                                        ? editData.interests.split(',')
+                                                        : [];
                                                     if (e.target.checked) {
                                                         currentInterests.push(option);
                                                     } else {
-                                                        currentInterests = currentInterests.filter(i => i !== option);
+                                                        currentInterests = currentInterests.filter(
+                                                            (i) => i !== option,
+                                                        );
                                                     }
-                                                    setEditData({ ...editData, interests: currentInterests.join(',') });
+                                                    setEditData({
+                                                        ...editData,
+                                                        interests: currentInterests.join(','),
+                                                    });
                                                 }}
                                                 className="w-4 h-4 text-sky-600 rounded focus:ring-sky-500"
                                             />
@@ -325,38 +380,71 @@ export default function MyPage() {
                     </div>
                 )}
 
-                {/* [탭 2] 내 활동 내역 */}
+                {/* [탭 2] 내 활동 내역 (강사 입장: 내가 쓴 공지/커뮤니티 글/댓글) */}
                 {activeTab === 'activity' && (
                     <div className="space-y-10">
                         <div>
-                            <h3 className="text-xl font-bold text-gray-800 mb-4 border-l-4 border-sky-500 pl-3">내가 쓴 글</h3>
+                            <h3 className="text-xl font-bold text-gray-800 mb-4 border-l-4 border-sky-500 pl-3">
+                                내가 쓴 글
+                            </h3>
                             {activity.threads.length > 0 ? (
                                 <ul className="border-t border-gray-200">
-                                    {activity.threads.map(thread => (
-                                        <li key={thread.id} className="flex justify-between py-3 border-b border-gray-100 hover:bg-gray-50 px-2 cursor-pointer" onClick={() => router.push(`/dashboard/community/${thread.id}`)}>
-                                            <span className="text-gray-700 text-sm truncate max-w-md">{thread.title}</span>
-                                            <span className="text-xs text-gray-400">{new Date(thread.created_at).toLocaleDateString()}</span>
+                                    {activity.threads.map((thread) => (
+                                        <li
+                                            key={thread.id}
+                                            className="flex justify-between py-3 border-b border-gray-100 hover:bg-gray-50 px-2 cursor-pointer"
+                                            onClick={() =>
+                                                router.push(`/dashboard/community/${thread.id}`)
+                                            }
+                                        >
+                                            <span className="text-gray-700 text-sm truncate max-w-md">
+                                                {thread.title}
+                                            </span>
+                                            <span className="text-xs text-gray-400">
+                                                {new Date(
+                                                    thread.created_at,
+                                                ).toLocaleDateString()}
+                                            </span>
                                         </li>
                                     ))}
                                 </ul>
-                            ) : <p className="text-gray-400 text-sm py-4">작성한 글이 없습니다.</p>}
+                            ) : (
+                                <p className="text-gray-400 text-sm py-4">
+                                    작성한 글이 없습니다.
+                                </p>
+                            )}
                         </div>
 
                         <div>
-                            <h3 className="text-xl font-bold text-gray-800 mb-4 border-l-4 border-sky-500 pl-3">내가 쓴 댓글</h3>
+                            <h3 className="text-xl font-bold text-gray-800 mb-4 border-l-4 border-sky-500 pl-3">
+                                내가 쓴 댓글
+                            </h3>
                             {activity.comments.length > 0 ? (
                                 <ul className="border-t border-gray-200">
-                                    {activity.comments.map(comment => (
-                                        <li key={comment.id} className="py-3 border-b border-gray-100 hover:bg-gray-50 px-2 cursor-pointer">
-                                            <p className="text-gray-800 text-sm mb-1">{comment.content}</p>
+                                    {activity.comments.map((comment) => (
+                                        <li
+                                            key={comment.id}
+                                            className="py-3 border-b border-gray-100 hover:bg-gray-50 px-2 cursor-pointer"
+                                        >
+                                            <p className="text-gray-800 text-sm mb-1">
+                                                {comment.content}
+                                            </p>
                                             <div className="flex justify-between text-xs text-gray-400">
                                                 <span>원글: {comment.thread_title}</span>
-                                                <span>{new Date(comment.created_at).toLocaleDateString()}</span>
+                                                <span>
+                                                    {new Date(
+                                                        comment.created_at,
+                                                    ).toLocaleDateString()}
+                                                </span>
                                             </div>
                                         </li>
                                     ))}
                                 </ul>
-                            ) : <p className="text-gray-400 text-sm py-4">작성한 댓글이 없습니다.</p>}
+                            ) : (
+                                <p className="text-gray-400 text-sm py-4">
+                                    작성한 댓글이 없습니다.
+                                </p>
+                            )}
                         </div>
                     </div>
                 )}
@@ -370,20 +458,42 @@ export default function MyPage() {
                                 현재 담당 중인 강의
                             </h3>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {lectures.filter(lecture => lecture.status !== 'CLOSED').map(lecture => (
-                                    <div key={lecture.id} onClick={() => router.push(`/teacher/courses/${lecture.id}`)} className="border border-gray-200 rounded-xl p-5 hover:shadow-md transition cursor-pointer bg-white group">
-                                        <div className="flex justify-between items-start mb-2">
-                                            <span className="bg-sky-100 text-sky-600 text-xs font-bold px-2 py-1 rounded">담당중</span>
-                                            {lecture.created_at && (
-                                                <span className="text-xs text-gray-400">{new Date(lecture.created_at).toLocaleDateString()} 개설</span>
-                                            )}
+                                {enrollments
+                                    .filter((e) => e.lecture.status !== 'CLOSED')
+                                    .map((item) => (
+                                        <div
+                                            key={item.lecture.id}
+                                            onClick={() =>
+                                                router.push(
+                                                    `/dashboard/courses/${item.lecture.id}/management`,
+                                                )
+                                            }
+                                            className="border border-gray-200 rounded-xl p-5 hover:shadow-md transition cursor-pointer bg-white group"
+                                        >
+                                            <div className="flex justify-between items-start mb-2">
+                                                <span className="bg-sky-100 text-sky-600 text-xs font-bold px-2 py-1 rounded">
+                                                    담당
+                                                </span>
+                                                <span className="text-xs text-gray-400">
+                                                    {new Date(
+                                                        item.joined_at,
+                                                    ).toLocaleDateString()}{' '}
+                                                    시작
+                                                </span>
+                                            </div>
+                                            <h4 className="font-bold text-gray-800 text-lg group-hover:text-sky-600">
+                                                {item.lecture.name}
+                                            </h4>
+                                            <p className="text-sm text-gray-500 mt-1">
+                                                {item.lecture.instructor_name} 강사
+                                            </p>
                                         </div>
-                                        <h4 className="font-bold text-gray-800 text-lg group-hover:text-sky-600">{lecture.name}</h4>
-                                        <p className="text-sm text-gray-500 mt-1">{lecture.instructor_name} 교수님</p>
+                                    ))}
+                                {enrollments.filter((e) => e.lecture.status !== 'CLOSED').length ===
+                                    0 && (
+                                    <div className="col-span-2 text-center py-8 bg-gray-50 rounded-lg text-gray-400 text-sm">
+                                        담당 중인 강의가 없습니다.
                                     </div>
-                                ))}
-                                {lectures.filter(lecture => lecture.status !== 'CLOSED').length === 0 && (
-                                    <div className="col-span-2 text-center py-8 bg-gray-50 rounded-lg text-gray-400 text-sm">담당 중인 강의가 없습니다.</div>
                                 )}
                             </div>
                         </div>
@@ -394,20 +504,37 @@ export default function MyPage() {
                                 지난 강의 (종료됨)
                             </h3>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {lectures.filter(lecture => lecture.status === 'CLOSED').map(lecture => (
-                                    <div key={lecture.id} className="border border-gray-200 rounded-xl p-5 bg-gray-50 opacity-70">
-                                        <div className="flex justify-between items-start mb-2">
-                                            <span className="bg-gray-200 text-gray-500 text-xs font-bold px-2 py-1 rounded">종료</span>
-                                            {lecture.created_at && (
-                                                <span className="text-xs text-gray-400">{new Date(lecture.created_at).toLocaleDateString()} 개설</span>
-                                            )}
+                                {enrollments
+                                    .filter((e) => e.lecture.status === 'CLOSED')
+                                    .map((item) => (
+                                        <div
+                                            key={item.lecture.id}
+                                            className="border border-gray-200 rounded-xl p-5 bg-gray-50 opacity-70"
+                                        >
+                                            <div className="flex justify-between items-start mb-2">
+                                                <span className="bg-gray-200 text-gray-500 text-xs font-bold px-2 py-1 rounded">
+                                                    종료
+                                                </span>
+                                                <span className="text-xs text-gray-400">
+                                                    {new Date(
+                                                        item.joined_at,
+                                                    ).toLocaleDateString()}{' '}
+                                                    시작
+                                                </span>
+                                            </div>
+                                            <h4 className="font-bold text-gray-700 text-lg">
+                                                {item.lecture.name}
+                                            </h4>
+                                            <p className="text-sm text-gray-500 mt-1">
+                                                {item.lecture.instructor_name} 강사
+                                            </p>
                                         </div>
-                                        <h4 className="font-bold text-gray-700 text-lg">{lecture.name}</h4>
-                                        <p className="text-sm text-gray-500 mt-1">{lecture.instructor_name} 교수님</p>
+                                    ))}
+                                {enrollments.filter((e) => e.lecture.status === 'CLOSED').length ===
+                                    0 && (
+                                    <div className="col-span-2 text-center py-8 border border-dashed border-gray-300 rounded-lg text-gray-400 text-sm">
+                                        종료된 강의가 없습니다.
                                     </div>
-                                ))}
-                                {lectures.filter(lecture => lecture.status === 'CLOSED').length === 0 && (
-                                    <div className="col-span-2 text-center py-8 border border-dashed border-gray-300 rounded-lg text-gray-400 text-sm">종료된 강의가 없습니다.</div>
                                 )}
                             </div>
                         </div>

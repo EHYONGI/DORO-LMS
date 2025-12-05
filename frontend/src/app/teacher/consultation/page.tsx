@@ -1,459 +1,532 @@
+// app/teacher/consultation/page.tsx
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
-interface Consultation {
-    id: number;
-    student: number;
-    student_name: string;
-    instructor_name: string;
-    consultation_type: string;
-    topic: string;
-    content: string;
-    // ✅ 희망일(날짜만) 추가
-    preferred_date: string | null;
-    // ✅ 실제 상담일시(날짜+시간, 없을 수 있음)
-    scheduled_at: string | null;
-    status: string;
-    method: string;
-    created_at: string;
+// 상담 요청(강사용) 타입
+interface ConsultationRequest {
+  id: number;
+  student_name: string;
+  consultation_type: 'CAREER' | 'CODING' | 'OTHER' | string;
+  method: 'OFFLINE' | 'ONLINE' | string;
+  topic: string;
+  content: string;
+  requested_at: string;    // 신청 날짜
+  scheduled_at: string | null; // 승인된 상담 일시
+  status: 'PENDING' | 'APPROVED' | 'COMPLETED' | 'CANCELED' | string;
 }
 
-// 🔹 공통 날짜·시간 포맷 (datetime용)
-const formatDateTime = (value: string | null | undefined) => {
-    if (!value) return '-';
-    const d = new Date(value);
-    if (Number.isNaN(d.getTime())) return value;
-    return d.toLocaleString();
-};
+type ActiveTab = 'request' | 'calendar';
 
-// 🔹 상담일시(신청일정/예정일) 표시용
-// 1) scheduled_at이 있으면 그걸 우선
-// 2) 없으면 preferred_date(희망일)만 날짜로 표시
-const formatConsultDate = (item: Consultation) => {
-    if (item.scheduled_at) {
-        return formatDateTime(item.scheduled_at);
-    }
-    if (item.preferred_date) {
-        const d = new Date(item.preferred_date);
-        if (!Number.isNaN(d.getTime())) {
-            return d.toLocaleDateString();
-        }
-        return item.preferred_date;
-    }
-    return '-';
-};
-
-// 날짜 문자열에서 YYYY-MM-DD만 뽑기 (preferred_date, scheduled_at 공통 사용)
-const extractDateOnly = (value: string | null | undefined) => {
-    if (!value) return null;
-    return value.split('T')[0]; // T 없으면 전체가 그대로 남음
-};
+const API_BASE = 'http://127.0.0.1:8000'; // 필요하면 수정해서 사용
 
 export default function TeacherConsultationPage() {
-    const router = useRouter();
-    const [activeTab, setActiveTab] = useState<'list' | 'calendar'>('list');
-    const [consultations, setConsultations] = useState<Consultation[]>([]);
-    const [loading, setLoading] = useState(true);
+  const router = useRouter();
 
-    // 필터 상태
-    const [filters, setFilters] = useState({
-        student: '',
-        type: '',
-        status: '',
-        method: ''
-    });
+  const [activeTab, setActiveTab] = useState<ActiveTab>('request');
 
-    // 상담 목록 불러오기
-    useEffect(() => {
-        fetchConsultations();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [filters]);
+  const [requests, setRequests] = useState<ConsultationRequest[]>([]);
+  const [loading, setLoading] = useState(true);
 
-    const fetchConsultations = async () => {
-        const token = localStorage.getItem('access_token');
-        setLoading(true);
+  // 필터
+  const [filters, setFilters] = useState({
+    student: '',
+    type: '',
+    status: '',
+    method: '',
+    dateOrder: '', // '' | 'ASC' | 'DESC'
+  });
 
-        const params = new URLSearchParams();
-        if (filters.student) params.append('student', filters.student);
-        if (filters.type) params.append('type', filters.type);
-        if (filters.status) params.append('status', filters.status);
-        if (filters.method) params.append('method', filters.method);
+  // 달력 상태
+  const [currentMonth, setCurrentMonth] = useState(() => {
+    const d = new Date();
+    d.setDate(1);
+    return d;
+  });
 
-        try {
-            const res = await fetch(
-                `http://127.0.0.1:8000/api/consultations/instructor/list/?${params}`,
-                {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                }
-            );
-            if (res.ok) {
-                const data = await res.json();
-                setConsultations(data);
-            }
-        } catch (err) {
-            console.error(err);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    // 상태 변경 핸들러 (지금은 status만 변경)
-    const handleStatusChange = async (id: number, newStatus: string) => {
-        const token = localStorage.getItem('access_token');
-
-        try {
-            const res = await fetch(
-                `http://127.0.0.1:8000/api/consultations/${id}/status/`,
-                {
-                    method: 'PATCH',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ status: newStatus }),
-                }
-            );
-
-            if (res.ok) {
-                alert('상태가 변경되었습니다.');
-                fetchConsultations();
-            } else {
-                alert('상태 변경에 실패했습니다.');
-            }
-        } catch (err) {
-            console.error(err);
-        }
-    };
-
-    // 상담 삭제
-    const handleDelete = async (id: number) => {
-        if (!confirm('정말 삭제하시겠습니까?')) return;
-
-        const token = localStorage.getItem('access_token');
-        try {
-            const res = await fetch(
-                `http://127.0.0.1:8000/api/consultations/${id}/`,
-                {
-                    method: 'DELETE',
-                    headers: { 'Authorization': `Bearer ${token}` }
-                }
-            );
-
-            if (res.ok) {
-                alert('삭제되었습니다.');
-                fetchConsultations();
-            }
-        } catch (err) {
-            console.error(err);
-        }
-    };
-
-    // 상태 표시 스타일
-    const getStatusBadge = (status: string) => {
-        const styles = {
-            'PENDING': 'bg-yellow-100 text-yellow-800',
-            'APPROVED': 'bg-blue-100 text-blue-800',
-            'COMPLETED': 'bg-green-100 text-green-800',
-            'CANCELED': 'bg-gray-100 text-gray-800'
-        };
-        const labels = {
-            'PENDING': '신청완료',
-            'APPROVED': '상담예정',
-            'COMPLETED': '상담완료',
-            'CANCELED': '취소됨'
-        };
-        return (
-            <span className={`px-2 py-1 rounded text-xs font-bold ${styles[status as keyof typeof styles]}`}>
-                {labels[status as keyof typeof labels]}
-            </span>
-        );
-    };
-
-    const getTypeLabel = (type: string) => {
-        const labels = { 'CAREER': '진로상담', 'CODING': '코딩질문', 'OTHER': '기타' };
-        return labels[type as keyof typeof labels] || type;
-    };
-
-    if (loading) return <div className="text-center py-20">로딩 중...</div>;
-
-    return (
-        <div className="max-w-7xl mx-auto py-10 px-4 sm:px-6 lg:px-8">
-            <h1 className="text-2xl font-bold text-gray-900 mb-6">상담페이지</h1>
-
-            {/* 탭 메뉴 */}
-            <div className="flex gap-2 mb-6 border-b border-gray-300 pb-1">
-                <button
-                    onClick={() => setActiveTab('list')}
-                    className={`px-6 py-2 rounded-t-lg font-bold text-sm transition border-t border-l border-r border-gray-300
-                        ${activeTab === 'list' ? 'bg-sky-600 text-white border-sky-600' : 'bg-white text-gray-500 hover:bg-gray-50'}`}
-                >
-                    상담요청 관리
-                </button>
-                <button
-                    onClick={() => setActiveTab('calendar')}
-                    className={`px-6 py-2 rounded-t-lg font-bold text-sm transition border-t border-l border-r border-gray-300
-                        ${activeTab === 'calendar' ? 'bg-sky-600 text-white border-sky-600' : 'bg-white text-gray-500 hover:bg-gray-50'}`}
-                >
-                    일정 관리
-                </button>
-            </div>
-
-            {activeTab === 'list' ? (
-                /* === 상담요청 관리 탭 === */
-                <div className="bg-white rounded-b-lg border border-gray-200 p-6 shadow-sm min-h-[500px]">
-                    {/* 필터 영역 */}
-                    <div className="flex flex-wrap gap-4 mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200 items-center">
-                        <select
-                            value={filters.student}
-                            onChange={(e) => setFilters({ ...filters, student: e.target.value })}
-                            className="border border-gray-300 p-2 rounded text-sm text-gray-700 focus:border-sky-500 outline-none"
-                        >
-                            <option value="">학생명</option>
-                        </select>
-
-                        <select
-                            value={filters.type}
-                            onChange={(e) => setFilters({ ...filters, type: e.target.value })}
-                            className="border border-gray-300 p-2 rounded text-sm text-gray-700 focus:border-sky-500 outline-none"
-                        >
-                            <option value="">신청유형</option>
-                            <option value="CAREER">진로상담</option>
-                            <option value="CODING">코딩질문</option>
-                            <option value="OTHER">기타</option>
-                        </select>
-
-                        <select
-                            value={filters.status}
-                            onChange={(e) => setFilters({ ...filters, status: e.target.value })}
-                            className="border border-gray-300 p-2 rounded text-sm text-gray-700 focus:border-sky-500 outline-none"
-                        >
-                            <option value="">상태</option>
-                            <option value="PENDING">신청완료</option>
-                            <option value="APPROVED">상담예정</option>
-                            <option value="COMPLETED">상담완료</option>
-                            <option value="CANCELED">취소됨</option>
-                        </select>
-
-                        <select
-                            value={filters.method}
-                            onChange={(e) => setFilters({ ...filters, method: e.target.value })}
-                            className="border border-gray-300 p-2 rounded text-sm text-gray-700 focus:border-sky-500 outline-none"
-                        >
-                            <option value="">분배</option>
-                            <option value="OFFLINE">대면</option>
-                            <option value="ONLINE">비대면</option>
-                        </select>
-
-                        <button
-                            onClick={() => setFilters({ student: '', type: '', status: '', method: '' })}
-                            className="ml-auto bg-sky-500 text-white px-4 py-2 rounded text-sm font-bold hover:bg-sky-600 shadow-sm"
-                        >
-                            + 신청완료
-                        </button>
-                    </div>
-
-                    {/* 테이블 */}
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-sm text-left">
-                            <thead className="bg-gray-50 border-b border-gray-200">
-                                <tr className="text-gray-600">
-                                    <th className="py-3 px-4 font-medium text-center">번호</th>
-                                    <th className="py-3 px-4 font-medium text-center">학생명</th>
-                                    <th className="py-3 px-4 font-medium text-center">신청유형</th>
-                                    <th className="py-3 px-4 font-medium text-center">신청일시</th>
-                                    <th className="py-3 px-4 font-medium text-center">상담 내용</th>
-                                    <th className="py-3 px-4 font-medium text-center">상담일시(신청일정/예정일)</th>
-                                    <th className="py-3 px-4 font-medium text-center">상태</th>
-                                    <th className="py-3 px-4 font-medium text-center">관리</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-100">
-                                {consultations.length === 0 ? (
-                                    <tr>
-                                        <td colSpan={8} className="text-center py-10 text-gray-400">
-                                            신청된 상담이 없습니다.
-                                        </td>
-                                    </tr>
-                                ) : (
-                                    consultations.map((item, index) => (
-                                        <tr key={item.id} className="hover:bg-gray-50">
-                                            <td className="py-3 px-4 text-center text-gray-800">{index + 1}</td>
-                                            <td className="py-3 px-4 text-center text-gray-800">{item.student_name}</td>
-                                            <td className="py-3 px-4 text-center text-gray-600">
-                                                {getTypeLabel(item.consultation_type)}
-                                            </td>
-                                            <td className="py-3 px-4 text-center text-xs text-gray-600">
-                                                {formatDateTime(item.created_at)}
-                                            </td>
-                                            <td className="py-3 px-4 text-center">
-                                                <button
-                                                    onClick={() => router.push(`/teacher/consultation/${item.id}`)}
-                                                    className="text-sky-600 hover:underline font-bold"
-                                                >
-                                                    {item.topic || '상담 내용'}
-                                                </button>
-                                            </td>
-                                            <td className="py-3 px-4 text-center text-xs text-gray-600">
-                                                {formatConsultDate(item)}
-                                            </td>
-                                            <td className="py-3 px-4 text-center">
-                                                {getStatusBadge(item.status)}
-                                            </td>
-                                            <td className="py-3 px-4 text-center">
-                                                <div className="flex gap-1 justify-center">
-                                                    {item.status === 'PENDING' && (
-                                                        <button
-                                                            onClick={() => handleStatusChange(item.id, 'APPROVED')}
-                                                            className="px-3 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600"
-                                                        >
-                                                            승인
-                                                        </button>
-                                                    )}
-                                                    {item.status === 'APPROVED' && (
-                                                        <button
-                                                            onClick={() => handleStatusChange(item.id, 'COMPLETED')}
-                                                            className="px-3 py-1 bg-green-500 text-white text-xs rounded hover:bg-green-600"
-                                                        >
-                                                            완료
-                                                        </button>
-                                                    )}
-                                                    <button
-                                                        onClick={() => handleDelete(item.id)}
-                                                        className="px-3 py-1 bg-gray-500 text-white text-xs rounded hover:bg-gray-600"
-                                                    >
-                                                        삭제
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            ) : (
-                /* === 일정 관리 탭 (달력) === */
-                <div className="bg-white rounded-b-lg border border-gray-200 p-6 shadow-sm min-h-[500px]">
-                    <CalendarView consultations={consultations} />
-                </div>
-            )}
-        </div>
-    );
-}
-
-// 달력 컴포넌트
-function CalendarView({ consultations }: { consultations: Consultation[] }) {
-    const [currentDate, setCurrentDate] = useState(new Date());
-
-    const year = currentDate.getFullYear();
-    const month = currentDate.getMonth();
-
-    const firstDay = new Date(year, month, 1);
-
-    const startDate = new Date(firstDay);
-    startDate.setDate(startDate.getDate() - firstDay.getDay());
-
-    const weeks: {
-        date: Date;
-        consultations: Consultation[];
-    }[][] = [];
-    const currentWeekDate = new Date(startDate);
-
-    for (let week = 0; week < 6; week++) {
-        const days: {
-            date: Date;
-            consultations: Consultation[];
-        }[] = [];
-        for (let day = 0; day < 7; day++) {
-            const date = new Date(currentWeekDate);
-            const dateStr = date.toISOString().split('T')[0];
-
-            // ✅ scheduled_at 없으면 preferred_date 기준으로도 캘린더에 표시
-            const dayConsultations = consultations.filter((c) => {
-                const scheduledDate = extractDateOnly(c.scheduled_at);
-                const preferredDate = extractDateOnly(c.preferred_date);
-                const key = scheduledDate || preferredDate;
-                return key === dateStr;
-            });
-
-            days.push({
-                date: date,
-                consultations: dayConsultations,
-            });
-
-            currentWeekDate.setDate(currentWeekDate.getDate() + 1);
-        }
-        weeks.push(days);
+  // 로그인 체크 + 데이터 불러오기
+  useEffect(() => {
+    const token = localStorage.getItem('access_token');
+    if (!token) {
+      alert('로그인이 필요합니다.');
+      router.push('/login');
+      return;
     }
 
-    return (
-        <div>
-            {/* 달력 헤더 */}
-            <div className="flex justify-between items-center mb-6">
-                <button
-                    onClick={() => setCurrentDate(new Date(year, month - 1))}
-                    className="px-3 py-1 border rounded hover:bg-gray-50"
-                >
-                    ◀
-                </button>
-                <h2 className="text-lg font-bold">
-                    {year}년 {month + 1}월
-                </h2>
-                <button
-                    onClick={() => setCurrentDate(new Date(year, month + 1))}
-                    className="px-3 py-1 border rounded hover:bg-gray-50"
-                >
-                    ▶
-                </button>
-            </div>
+    const fetchRequests = async () => {
+      setLoading(true);
+      try {
+        // 강사용 상담 요청 리스트 엔드포인트 (API 명세에 맞게 수정해서 사용)
+        const res = await fetch(`${API_BASE}/api/consult/teacher/requests/`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
 
-            {/* 요일 헤더 */}
-            <div className="grid grid-cols-7 gap-2 mb-2">
-                {['일', '월', '화', '수', '목', '금', '토'].map((day, i) => (
-                    <div key={i} className="text-center font-bold text-gray-600 py-2">
-                        {day}
-                    </div>
-                ))}
-            </div>
+        if (!res.ok) {
+          throw new Error('failed to fetch');
+        }
 
-            {/* 달력 본체 */}
-            <div className="grid grid-cols-7 gap-2">
-                {weeks.map((week, weekIdx) =>
-                    week.map((day, dayIdx) => {
-                        const isCurrentMonth = day.date.getMonth() === month;
-                        const isToday = day.date.toDateString() === new Date().toDateString();
+        const data = await res.json();
+        setRequests(data);
+      } catch (e) {
+        console.error(e);
+        alert('상담 요청 목록을 불러오지 못했습니다.');
+      } finally {
+        setLoading(false);
+      }
+    };
 
-                        return (
-                            <div
-                                key={`${weekIdx}-${dayIdx}`}
-                                className={`border rounded p-2 min-h-[100px] ${
-                                    !isCurrentMonth ? 'bg-gray-50 text-gray-400' : ''
-                                } ${isToday ? 'border-sky-600 border-2' : ''}`}
-                            >
-                                <div className="text-sm font-bold mb-1">
-                                    {day.date.getDate()}
-                                </div>
-                                <div className="space-y-1">
-                                    {day.consultations.map((c) => (
-                                        <div
-                                            key={c.id}
-                                            className="text-xs p-1 bg-sky-100 rounded cursor-pointer hover:bg-sky-200"
-                                            onClick={() =>
-                                                (window.location.href = `/teacher/consultation/${c.id}`)
-                                            }
-                                        >
-                                            {c.student_name} - {c.topic?.substring(0, 10)}
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        );
-                    })
-                )}
+    fetchRequests();
+  }, [router]);
+
+  // 상태 텍스트
+  const getStatusText = (s: string) => {
+    const map: Record<string, string> = {
+      PENDING: '신청대기',
+      APPROVED: '승인됨',
+      COMPLETED: '완료',
+      CANCELED: '취소됨',
+    };
+    return map[s] ?? s;
+  };
+
+  // 유형 텍스트
+  const getTypeText = (t: string) => {
+    const map: Record<string, string> = {
+      CAREER: '진로상담',
+      CODING: '코딩질문',
+      OTHER: '기타',
+    };
+    return map[t] ?? t;
+  };
+
+  // 필터 적용된 리스트
+  const filteredRequests = useMemo(() => {
+    let list = [...requests];
+
+    if (filters.student) {
+      list = list.filter((r) =>
+        r.student_name.toLowerCase().includes(filters.student.toLowerCase())
+      );
+    }
+    if (filters.type) {
+      list = list.filter((r) => r.consultation_type === filters.type);
+    }
+    if (filters.status) {
+      list = list.filter((r) => r.status === filters.status);
+    }
+    if (filters.method) {
+      list = list.filter((r) => r.method === filters.method);
+    }
+    if (filters.dateOrder === 'ASC') {
+      list.sort(
+        (a, b) =>
+          new Date(a.requested_at).getTime() -
+          new Date(b.requested_at).getTime()
+      );
+    } else if (filters.dateOrder === 'DESC') {
+      list.sort(
+        (a, b) =>
+          new Date(b.requested_at).getTime() -
+          new Date(a.requested_at).getTime()
+      );
+    }
+
+    return list;
+  }, [requests, filters]);
+
+  // 상태 변경 (승인 / 거절 등)
+  const handleStatusChange = async (
+    id: number,
+    nextStatus: 'APPROVED' | 'CANCELED' | 'COMPLETED'
+  ) => {
+    const token = localStorage.getItem('access_token');
+    if (!token) return;
+
+    if (!confirm(`해당 상담을 ${getStatusText(nextStatus)} 상태로 변경할까요?`)) {
+      return;
+    }
+
+    try {
+      const res = await fetch(`${API_BASE}/api/consult/teacher/requests/${id}/`, {
+        method: 'PATCH',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status: nextStatus }),
+      });
+
+      if (!res.ok) {
+        throw new Error('failed to update status');
+      }
+
+      setRequests((prev) =>
+        prev.map((r) => (r.id === id ? { ...r, status: nextStatus } : r))
+      );
+      alert('상태가 변경되었습니다.');
+    } catch (e) {
+      console.error(e);
+      alert('상태 변경에 실패했습니다.');
+    }
+  };
+
+  // ========= 캘린더 관련 계산 =========
+  const year = currentMonth.getFullYear();
+  const month = currentMonth.getMonth(); // 0~11
+
+  const firstDayOfWeek = new Date(year, month, 1).getDay(); // 0=일
+  const lastDate = new Date(year, month + 1, 0).getDate();
+
+  const calendarCells = useMemo(() => {
+    const cells: (number | null)[] = [];
+    // 앞쪽 비어있는 칸
+    for (let i = 0; i < firstDayOfWeek; i += 1) cells.push(null);
+    // 날짜
+    for (let d = 1; d <= lastDate; d += 1) cells.push(d);
+    return cells;
+  }, [firstDayOfWeek, lastDate]);
+
+  // 해당 날짜의 일정(승인/완료된 상담만 표시)
+  const getEventsForDate = (day: number) => {
+    const thisDay = new Date(year, month, day);
+    return requests.filter((r) => {
+      if (!r.scheduled_at) return false;
+      const d = new Date(r.scheduled_at);
+      return (
+        d.getFullYear() === thisDay.getFullYear() &&
+        d.getMonth() === thisDay.getMonth() &&
+        d.getDate() === thisDay.getDate() &&
+        (r.status === 'APPROVED' || r.status === 'COMPLETED')
+      );
+    });
+  };
+
+  const changeMonth = (diff: number) => {
+    setCurrentMonth((prev) => {
+      const d = new Date(prev);
+      d.setMonth(d.getMonth() + diff);
+      d.setDate(1);
+      return d;
+    });
+  };
+
+  return (
+    <div className="max-w-7xl mx-auto py-10 px-4 sm:px-6 lg:px-8">
+      {/* 상단 탭 - 학생용 코드 레이아웃 맞춤 */}
+      <div className="flex gap-2 mb-6 border-b border-gray-300 pb-1">
+        <button
+          onClick={() => setActiveTab('request')}
+          className={`px-6 py-2 rounded-t-lg font-bold text-sm transition border-t border-l border-r border-gray-300
+            ${
+              activeTab === 'request'
+                ? 'bg-sky-600 text-white border-sky-600'
+                : 'bg-white text-gray-500 hover:bg-gray-50'
+            }`}
+        >
+          상담요청 관리
+        </button>
+        <button
+          onClick={() => setActiveTab('calendar')}
+          className={`px-6 py-2 rounded-t-lg font-bold text-sm transition border-t border-l border-r border-gray-300
+            ${
+              activeTab === 'calendar'
+                ? 'bg-sky-600 text-white border-sky-600'
+                : 'bg-white text-gray-500 hover:bg-gray-50'
+            }`}
+        >
+          일정관리
+        </button>
+      </div>
+
+      {/* 탭 1 : 상담요청 관리 */}
+      {activeTab === 'request' && (
+        <div className="bg-white rounded-b-lg border border-gray-200 p-6 shadow-sm min-h-[500px]">
+          {/* 필터 바 - 학생명 / 유형 / 상태 / 날짜 */}
+          <div className="flex flex-wrap gap-4 mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200 items-center">
+            {/* 학생명 검색 (input) */}
+            <input
+              type="text"
+              value={filters.student}
+              onChange={(e) =>
+                setFilters((f) => ({ ...f, student: e.target.value }))
+              }
+              placeholder="학생명"
+              className="border border-gray-300 p-2 rounded text-sm text-gray-700 focus:border-sky-500 outline-none"
+            />
+
+            {/* 상담유형 */}
+            <select
+              value={filters.type}
+              onChange={(e) =>
+                setFilters((f) => ({ ...f, type: e.target.value }))
+              }
+              className="border border-gray-300 p-2 rounded text-sm text-gray-700 focus:border-sky-500 outline-none"
+            >
+              <option value="">상담유형 전체</option>
+              <option value="CAREER">진로상담</option>
+              <option value="CODING">코딩질문</option>
+              <option value="OTHER">기타</option>
+            </select>
+
+            {/* 상태 */}
+            <select
+              value={filters.status}
+              onChange={(e) =>
+                setFilters((f) => ({ ...f, status: e.target.value }))
+              }
+              className="border border-gray-300 p-2 rounded text-sm text-gray-700 focus:border-sky-500 outline-none"
+            >
+              <option value="">상태 전체</option>
+              <option value="PENDING">신청대기</option>
+              <option value="APPROVED">승인됨</option>
+              <option value="COMPLETED">완료</option>
+              <option value="CANCELED">취소됨</option>
+            </select>
+
+            {/* 상담형태 */}
+            <select
+              value={filters.method}
+              onChange={(e) =>
+                setFilters((f) => ({ ...f, method: e.target.value }))
+              }
+              className="border border-gray-300 p-2 rounded text-sm text-gray-700 focus:border-sky-500 outline-none"
+            >
+              <option value="">상담형태 전체</option>
+              <option value="OFFLINE">대면상담</option>
+              <option value="ONLINE">비대면상담</option>
+            </select>
+
+            {/* 날짜 정렬 */}
+            <select
+              value={filters.dateOrder}
+              onChange={(e) =>
+                setFilters((f) => ({ ...f, dateOrder: e.target.value }))
+              }
+              className="border border-gray-300 p-2 rounded text-sm text-gray-700 focus:border-sky-500 outline-none"
+            >
+              <option value="">날짜정렬 없음</option>
+              <option value="ASC">신청일 ↑</option>
+              <option value="DESC">신청일 ↓</option>
+            </select>
+
+            <button
+              onClick={() =>
+                setFilters({
+                  student: '',
+                  type: '',
+                  status: '',
+                  method: '',
+                  dateOrder: '',
+                })
+              }
+              className="text-xs px-3 py-2 border border-gray-300 rounded hover:bg-gray-100"
+            >
+              필터 초기화
+            </button>
+          </div>
+
+          {/* 리스트 테이블 */}
+          {loading ? (
+            <p className="text-center py-10 text-gray-500">로딩 중...</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm text-left">
+                <thead className="bg-gray-50 border-b border-gray-200">
+                  <tr className="text-gray-600">
+                    <th className="py-3 px-4 font-medium text-center w-16">
+                      번호
+                    </th>
+                    <th className="py-3 px-4 font-medium">학생명</th>
+                    <th className="py-3 px-4 font-medium">상담유형</th>
+                    <th className="py-3 px-4 font-medium">상담형태</th>
+                    <th className="py-3 px-4 font-medium">상담 내용</th>
+                    <th className="py-3 px-4 font-medium">
+                      상담일(상담예정일)
+                    </th>
+                    <th className="py-3 px-4 font-medium">상태</th>
+                    <th className="py-3 px-4 font-medium">관리</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {filteredRequests.length === 0 ? (
+                    <tr>
+                      <td
+                        colSpan={8}
+                        className="text-center py-10 text-gray-400"
+                      >
+                        상담 요청이 없습니다.
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredRequests.map((r, idx) => (
+                      <tr key={r.id} className="hover:bg-gray-50">
+                        <td className="py-3 px-4 text-center">
+                          {idx + 1}
+                        </td>
+                        <td className="py-3 px-4">{r.student_name}</td>
+                        <td className="py-3 px-4">
+                          {getTypeText(r.consultation_type)}
+                        </td>
+                        <td className="py-3 px-4">
+                          {r.method === 'OFFLINE' ? '대면상담' : '비대면상담'}
+                        </td>
+                        <td className="py-3 px-4">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              router.push(
+                                `/teacher/consultation/${r.id}`
+                              )
+                            }
+                            className="px-3 py-1 text-xs bg-white border border-sky-500 text-sky-600 rounded hover:bg-sky-50"
+                          >
+                            자세히 보기
+                          </button>
+                        </td>
+                        <td className="py-3 px-4 text-gray-700">
+                          {r.scheduled_at
+                            ? new Date(
+                                r.scheduled_at
+                              ).toLocaleString()
+                            : '-'}
+                        </td>
+                        <td className="py-3 px-4">
+                          <span
+                            className={`px-2 py-1 rounded text-xs font-bold ${
+                              r.status === 'PENDING'
+                                ? 'bg-yellow-100 text-yellow-700'
+                                : r.status === 'APPROVED'
+                                ? 'bg-blue-100 text-blue-700'
+                                : r.status === 'COMPLETED'
+                                ? 'bg-green-100 text-green-700'
+                                : 'bg-gray-100 text-gray-700'
+                            }`}
+                          >
+                            {getStatusText(r.status)}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4">
+                          {/* 관리 드롭다운 - 승인/거절/완료 */}
+                          <select
+                            defaultValue=""
+                            onChange={(e) => {
+                              const value = e.target.value as
+                                | 'APPROVED'
+                                | 'CANCELED'
+                                | 'COMPLETED'
+                                | '';
+                              if (!value) return;
+                              handleStatusChange(r.id, value);
+                              e.target.value = '';
+                            }}
+                            className="border border-gray-300 rounded px-2 py-1 text-xs"
+                          >
+                            <option value="">관리</option>
+                            {r.status !== 'APPROVED' && (
+                              <option value="APPROVED">승인</option>
+                            )}
+                            {r.status !== 'CANCELED' && (
+                              <option value="CANCELED">거절</option>
+                            )}
+                            {r.status === 'APPROVED' && (
+                              <option value="COMPLETED">상담완료</option>
+                            )}
+                          </select>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
             </div>
+          )}
         </div>
-    );
+      )}
+
+      {/* 탭 2 : 일정관리 (달력) */}
+      {activeTab === 'calendar' && (
+        <div className="bg-white rounded-b-lg border border-gray-200 p-6 shadow-sm min-h-[500px]">
+          {/* 달력 상단 : 월 변경 */}
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => changeMonth(-1)}
+                className="px-3 py-1 border rounded hover:bg-gray-50"
+              >
+                ◀
+              </button>
+              <button
+                type="button"
+                onClick={() => changeMonth(1)}
+                className="px-3 py-1 border rounded hover:bg-gray-50"
+              >
+                ▶
+              </button>
+              <span className="ml-4 font-bold text-gray-800">
+                {year}년 {month + 1}월
+              </span>
+            </div>
+          </div>
+
+          {/* 요일 헤더 */}
+          <div className="grid grid-cols-7 text-center text-xs font-bold text-gray-600 border-b mb-2">
+            <div className="py-2">일</div>
+            <div className="py-2">월</div>
+            <div className="py-2">화</div>
+            <div className="py-2">수</div>
+            <div className="py-2">목</div>
+            <div className="py-2">금</div>
+            <div className="py-2">토</div>
+          </div>
+
+          {/* 날짜 셀 */}
+          <div className="grid grid-cols-7 gap-px bg-gray-200 text-xs">
+            {calendarCells.map((day, idx) => {
+              if (day === null) {
+                return (
+                  <div
+                    key={idx}
+                    className="bg-white h-24 border border-gray-100"
+                  />
+                );
+              }
+
+              const events = getEventsForDate(day);
+
+              return (
+                <div
+                  key={idx}
+                  className="bg-white h-24 border border-gray-100 p-1 flex flex-col"
+                >
+                  <div className="text-right text-[11px] text-gray-700 mb-1">
+                    {day}
+                  </div>
+
+                  <div className="flex-1 overflow-hidden space-y-1">
+                    {events.map((e, i) => (
+                      <div
+                        key={i}
+                        className="text-[10px] leading-tight bg-sky-100 text-sky-800 rounded px-1 py-0.5 cursor-pointer hover:bg-sky-200"
+                        onClick={() =>
+                          router.push(`/teacher/consultation/${e.id}`)
+                        }
+                      >
+                        {new Date(e.scheduled_at || '').toLocaleTimeString(
+                          [],
+                          { hour: '2-digit', minute: '2-digit' }
+                        )}{' '}
+                        · {e.student_name}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
