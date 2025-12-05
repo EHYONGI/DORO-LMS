@@ -1,6 +1,5 @@
 from django.contrib import admin
-from .models import Lecture, LectureApplication, LectureSchedule, LectureNotice, Wishlist, Attendance, Enrollment, Assignment
-
+from .models import Lecture, LectureApplication, LectureSchedule, LectureNotice, Wishlist, Attendance, Enrollment, Assignment, AssignmentSubmission
 # Register your models here.
 @admin.register(Lecture)
 class LectureAdmin(admin.ModelAdmin):
@@ -33,3 +32,8 @@ class EnrollmentAdmin(admin.ModelAdmin):
 @admin.register(Assignment)
 class AssignmentAdmin(admin.ModelAdmin):
     pass
+
+@admin.register(AssignmentSubmission)
+class AssignmentSubmissionAdmin(admin.ModelAdmin):
+    list_display = ['assignment', 'student', 'submitted_at', 'grade']
+    list_filter = ['assignment__lecture', 'submitted_at']
