@@ -6,9 +6,11 @@ from user.models import User
 # 1. 강의 (Lecture)
 # ==========================================
 class Lecture(models.Model):
+    # 상태 관리를 위한 Choice 필드 (대시보드 필터링 용이)
     STATUS_CHOICES = (
-        ('RECRUITING', '선생님 배정 중'),
+        ('RECRUITING', '선생님 배정 중'), # 또는 강사 모집 중
         ('OPEN', '수강 신청 중'),
+<<<<<<< HEAD
         ('IN_PROGRESS', '수업 진행 중'),
         ('CLOSED', '마감'),
     )
@@ -30,14 +32,25 @@ class Lecture(models.Model):
     # 기본 정보
     name = models.CharField(max_length=255, verbose_name='수업명')
     description = models.TextField(blank=True, null=True, verbose_name='설명')
+=======
+        ('IN_PROGRESS', '수업 진행 중'), # [추가됨]
+        ('CLOSED', '마감'),           # 수업 종료
+    )
+
+    name = models.CharField(max_length=255, verbose_name="수업명")
+    description = models.TextField(blank=True, null=True) # 강의 설명
+    
+    # 핵심 변경: 강사가 정해지지 않은 상태로 생성되어야 하므로 null=True 허용
+>>>>>>> parent of 777f554 (student 완성)
     instructor = models.ForeignKey(
         User,
-        on_delete=models.SET_NULL,
+        on_delete=models.SET_NULL, # 강사가 탈퇴해도 강의 기록은 남김
         null=True, 
         blank=True,
         related_name='lectures',
         verbose_name='강사'
     )
+<<<<<<< HEAD
     status = models.CharField(
         max_length=20, 
         choices=STATUS_CHOICES, 
@@ -88,6 +101,10 @@ class Lecture(models.Model):
         related_name='next_lectures',
         verbose_name='선수과목'
     )
+=======
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='RECRUITING')
+    created_at = models.DateTimeField(auto_now_add=True)
+>>>>>>> parent of 777f554 (student 완성)
 
     class Meta:
         db_table = 'lecture'
@@ -97,6 +114,7 @@ class Lecture(models.Model):
 
     def __str__(self):
         return f"[{self.get_status_display()}] {self.name}"
+<<<<<<< HEAD
     
     def is_eligible_for_user(self, user):
         """사용자가 이 강의를 수강할 수 있는지 확인"""
@@ -151,6 +169,8 @@ class LectureRecommendation(models.Model):
     
     def __str__(self):
         return f"{self.user.username} → {self.lecture.name} ({self.recommendation_score}점)"
+=======
+>>>>>>> parent of 777f554 (student 완성)
 
 
 # ==========================================
@@ -324,6 +344,7 @@ class Attendance(models.Model):
     week = models.IntegerField(verbose_name='주차')
     status = models.IntegerField(
         choices=Status.choices, 
+<<<<<<< HEAD
         default=Status.PRESENT, 
         verbose_name='출결 상태'
     )
@@ -337,6 +358,11 @@ class Attendance(models.Model):
         unique_together = ['lecture', 'student', 'week']
         ordering = ['week', 'student']
     
+=======
+        default=Status.ABSENT
+    )
+
+>>>>>>> parent of 777f554 (student 완성)
     def __str__(self):
         return f"{self.lecture.name} - {self.student.username} - {self.week}주차"
 
