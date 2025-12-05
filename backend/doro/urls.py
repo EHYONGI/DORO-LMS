@@ -34,32 +34,41 @@ urlpatterns = [
     path('api/lecture/<int:lecture_id>/assignments/', lecture_views.course_assignment_list_api),
     path('api/lecture/<int:lecture_id>/attendance/', lecture_views.my_attendance_api),
     
-    # === [추가] 3-1. 강사용 강의 관리 API ===
+    # === 3-1. 과제 제출 관련 (학생용) ===
+    path('api/lecture/<int:lecture_id>/assignments/<int:assignment_id>/submit/', lecture_views.assignment_submit_api),
+    
+    # === 4. 강사용 강의 관리 API ===
     path('api/teacher/my-courses/', lecture_views.teacher_my_courses_api),
     path('api/teacher/lectures/<int:lecture_id>/assignments/', lecture_views.lecture_assignments_api),
     path('api/teacher/lectures/<int:lecture_id>/students/', lecture_views.lecture_students_api),
     path('api/teacher/lectures/<int:lecture_id>/attendance/<int:week>/', lecture_views.lecture_attendance_week_api),
     path('api/teacher/lectures/<int:lecture_id>/notices/', lecture_views.lecture_notices_api),
-    path('api/teacher/notices/<int:notice_id>/', lecture_views.lecture_notice_detail_api),
+    path('api/teacher/notices/<int:notice_id>/', lecture_views.lecture_notice_detail_teacher_api),
     
-    # === [NEW] 3-2. 강사용 강의 지원 API ===
+    # === 4-1. 강사용 과제 제출 관리 ===
+    # 제출 목록 조회
+    path('api/lecture/<int:lecture_id>/assignments/<int:assignment_id>/submissions/', lecture_views.assignment_submissions_list_api),
+    # 채점하기
+    path('api/lecture/<int:lecture_id>/assignments/<int:assignment_id>/submissions/<int:submission_id>/grade/', lecture_views.assignment_grade_api),
+    
+    # === 5. 강사용 강의 지원 API ===
     path('api/teacher/applications/', lecture_views.teacher_applications_api),
     path('api/teacher/applications/<int:application_id>/', lecture_views.teacher_application_cancel_api),
 
-    # === 4. 수강신청 & 추천 시스템 ===
+    # === 6. 수강신청 & 추천 시스템 ===
     # lecture 앱 안의 나머지 URL들 (강의 목록, 수강신청 등)
     path('api/lectures/', include('lecture.urls')),
     
-    # === 5. 유저 (User) API ===
+    # === 7. 유저 (User) API ===
     path('api/user/signup/', user_views.signup_api),
     path('api/user/login/', user_views.login_api),
     path('api/user/logout/', user_views.logout_api),
     path('api/user/me/', user_views.user_profile_api),
 
-    # === 6. 상담(Consultation) API ===
+    # === 8. 상담(Consultation) API ===
     path('api/consultations/', include('consultations.urls')),
     
-    # === 7. 수강신청 / 강의 관련 (courses prefix) ===
+    # === 9. 수강신청 / 강의 관련 (courses prefix) ===
     # 내 관심 강의 목록 조회 (GET)
     path('api/courses/wishlist', lecture_views.wishlist_list_api),
     # 관심 강의 추가/삭제 (POST, DELETE)
