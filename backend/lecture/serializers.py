@@ -1,5 +1,5 @@
+# backend/lecture/serializers.py
 from rest_framework import serializers
-<<<<<<< HEAD
 from .models import Lecture, Enrollment, Assignment, LectureNotice, Attendance, LectureRecommendation
 from user.models import User  # ← User import 추가!
 
@@ -156,30 +156,14 @@ class LectureRecommendationResponseSerializer(serializers.Serializer):
 # 3. 수강 신청 시리얼라이저
 # ========================================
 
-=======
-from .models import Lecture, Enrollment, Assignment, LectureNotice, Attendance
-
-# 1. 강의 정보 시리얼라이저
-class LectureSerializer(serializers.ModelSerializer):
-    # instructor_name 필드 유지
-    instructor_name = serializers.ReadOnlyField(source='instructor.username')
-
-    class Meta:
-        model = Lecture
-        # 모델에 실제로 존재하는 필드만 포함시킵니다.
-        fields = ['id', 'name', 'instructor_name', 'status', 'description']
-
-# 2. 수강 내역 시리얼라이저 (내 강의 목록용)
->>>>>>> parent of 777f554 (student 완성)
 class EnrollmentSerializer(serializers.ModelSerializer):
     """수강 내역 시리얼라이저"""
     lecture = LectureSerializer(read_only=True)
-
+    
     class Meta:
         model = Enrollment
-        fields = ['id', 'lecture', 'joined_at'] # id 필드도 포함하는 것이 좋습니다.
+        fields = ['id', 'lecture', 'joined_at']
 
-<<<<<<< HEAD
 
 class EnrollmentCreateSerializer(serializers.ModelSerializer):
     """수강 신청 생성용"""
@@ -228,20 +212,14 @@ class EnrollmentCreateSerializer(serializers.ModelSerializer):
 # 4. 과제 시리얼라이저
 # ========================================
 
-=======
-# 3. 과제 시리얼라이저
->>>>>>> parent of 777f554 (student 완성)
 class AssignmentSerializer(serializers.ModelSerializer):
     """과제 시리얼라이저"""
     lecture_name = serializers.ReadOnlyField(source='lecture.name')
 
-<<<<<<< HEAD
     # DB 필드(due_date, description)를 API 필드(deadline, content)로 매핑
     deadline = serializers.DateTimeField(source='due_date')
     content = serializers.CharField(source='description')
 
-=======
->>>>>>> parent of 777f554 (student 완성)
     class Meta:
         model = Assignment
         fields = ['id', 'lecture_name', 'title', 'deadline', 'content', 'created_at']
@@ -249,10 +227,6 @@ class AssignmentSerializer(serializers.ModelSerializer):
 # 5. 강의 공지 시리얼라이저
 # ========================================
 
-<<<<<<< HEAD
-=======
-# 4. 강의 공지 시리얼라이저
->>>>>>> parent of 777f554 (student 완성)
 class LectureNoticeSerializer(serializers.ModelSerializer):
     """강의 공지 시리얼라이저"""
     content = serializers.CharField(source='body') 
@@ -263,22 +237,17 @@ class LectureNoticeSerializer(serializers.ModelSerializer):
         model = LectureNotice
         fields = ['id', 'title', 'content', 'created_at', 'lecture_name', 'author_name', 'lecture']
 
-<<<<<<< HEAD
 
 # ========================================
 # 6. 출결 시리얼라이저
 # ========================================
 
-=======
-# 5. 출결 시리얼라이저
->>>>>>> parent of 777f554 (student 완성)
 class AttendanceSerializer(serializers.ModelSerializer):
     """출결 시리얼라이저"""
     status = serializers.CharField(source='get_status_display', read_only=True)
-
+    
     class Meta:
         model = Attendance
-<<<<<<< HEAD
         fields = ['id', 'week', 'attendance_date', 'status']
 
 
@@ -322,6 +291,3 @@ class UserCompetencySerializer(serializers.Serializer):
             'making_score': instance.making_score,
             'computing_score': instance.computing_score,
         }
-=======
-        fields = ['id', 'week', 'attendance_date', 'status']
->>>>>>> parent of 777f554 (student 완성)

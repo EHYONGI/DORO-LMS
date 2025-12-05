@@ -2,7 +2,6 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
-<<<<<<< HEAD
     # ========== 학생용 API ==========
 
     # 내 강의 목록
@@ -79,7 +78,3 @@ urlpatterns = [
     # ==> /api/lectures/<lecture_id>/notices/
     path('<int:lecture_id>/notices/', views.lecture_notices_api, name='lecture-notices'),
 ]
-=======
-    path("", views.practice),
-]
->>>>>>> parent of 777f554 (student 완성)
