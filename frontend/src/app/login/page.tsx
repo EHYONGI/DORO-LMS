@@ -33,19 +33,24 @@ export default function LoginPage() {
                 // 2) Navbar 등 업데이트
                 window.dispatchEvent(new Event('authChange'));
 
-                // 3) role 체크
-                const r = data.user.role;
+                // 3) role 체크 및 리다이렉트
+                const role = data.user.role;
 
-                const isTeacher =
-                    r === 2 ||
-                    r === '2' ||
-                    r === 'TEACHER' ||
-                    r === 'teacher' ||
-                    r === 'INSTRUCTOR';
-
-                if (isTeacher) {
+                // role에 따라 다른 대시보드로 이동
+                if (role === 0 || role === '0') {
+                    // Manager
+                    router.push('/manager/dashboard');
+                } else if (
+                    role === 2 ||
+                    role === '2' ||
+                    role === 'TEACHER' ||
+                    role === 'teacher' ||
+                    role === 'INSTRUCTOR'
+                ) {
+                    // Instructor/Teacher
                     router.push('/teacher/dashboard');
                 } else {
+                    // Student (role === 1)
                     router.push('/student/dashboard');
                 }
             } else {
