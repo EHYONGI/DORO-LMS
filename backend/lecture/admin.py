@@ -1,5 +1,9 @@
 from django.contrib import admin
-from .models import Lecture, LectureApplication, LectureSchedule, LectureNotice, Wishlist, Attendance, Enrollment, Assignment, AssignmentSubmission
+from .models import (
+    Lecture, LectureApplication, LectureSchedule, LectureNotice, 
+    Wishlist, Attendance, Enrollment, Assignment, Submission  # Submission으로 변경
+)
+
 # Register your models here.
 @admin.register(Lecture)
 class LectureAdmin(admin.ModelAdmin):
@@ -33,7 +37,7 @@ class EnrollmentAdmin(admin.ModelAdmin):
 class AssignmentAdmin(admin.ModelAdmin):
     pass
 
-@admin.register(AssignmentSubmission)
-class AssignmentSubmissionAdmin(admin.ModelAdmin):
+@admin.register(Submission)  # Submission으로 변경
+class SubmissionAdmin(admin.ModelAdmin):  # 클래스명도 변경
     list_display = ['assignment', 'student', 'submitted_at', 'grade']
     list_filter = ['assignment__lecture', 'submitted_at']

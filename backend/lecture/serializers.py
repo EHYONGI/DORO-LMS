@@ -1,7 +1,10 @@
 # backend/lecture/serializers.py
 from rest_framework import serializers
-from .models import Lecture, Enrollment, Assignment, LectureNotice, Attendance, LectureRecommendation
-from user.models import User  # ← User import 추가!
+from .models import (
+    Lecture, Enrollment, Assignment, LectureNotice, 
+    Attendance, LectureRecommendation, Submission  # Submission 추가
+)
+from user.models import User
 
 
 # ========================================
@@ -223,8 +226,32 @@ class AssignmentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Assignment
         fields = ['id', 'lecture_name', 'title', 'deadline', 'content', 'created_at']
+
+
 # ========================================
-# 5. 강의 공지 시리얼라이저
+# 5. 과제 제출 시리얼라이저
+# ========================================
+
+class SubmissionSerializer(serializers.ModelSerializer):
+    """과제 제출 시리얼라이저"""
+    student_name = serializers.SerializerMethodField()
+    student_id = serializers.ReadOnlyField(source='student.id')
+    
+    class Meta:
+        model = Submission
+        fields = [
+            'id', 'assignment', 'student', 'student_id', 'student_name', 
+            'content', 'file_url', 'submitted_at', 'grade', 'feedback', 'graded_at'
+        ]
+        read_only_fields = ['student', 'submitted_at', 'graded_at']
+    
+    def get_student_name(self, obj):
+        """학생 이름 반환 (성+이름 또는 username)"""
+        return f"{obj.student.last_name}{obj.student.first_name}" if obj.student.last_name else obj.student.username
+
+
+# ========================================
+# 6. 강의 공지 시리얼라이저
 # ========================================
 
 class LectureNoticeSerializer(serializers.ModelSerializer):
@@ -239,7 +266,7 @@ class LectureNoticeSerializer(serializers.ModelSerializer):
 
 
 # ========================================
-# 6. 출결 시리얼라이저
+# 7. 출결 시리얼라이저
 # ========================================
 
 class AttendanceSerializer(serializers.ModelSerializer):
@@ -262,7 +289,7 @@ class AttendanceDetailSerializer(serializers.ModelSerializer):
 
 
 # ========================================
-# 7. 학생 정보 시리얼라이저
+# 8. 학생 정보 시리얼라이저
 # ========================================
 
 class StudentSerializer(serializers.ModelSerializer):
@@ -273,7 +300,7 @@ class StudentSerializer(serializers.ModelSerializer):
 
 
 # ========================================
-# 8. 사용자 역량 정보 시리얼라이저
+# 9. 사용자 역량 정보 시리얼라이저
 # ========================================
 
 class UserCompetencySerializer(serializers.Serializer):

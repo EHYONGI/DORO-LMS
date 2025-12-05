@@ -11,7 +11,8 @@ from datetime import date
 # 같은 앱(lecture)의 모델들
 from .models import (
     Lecture, Assignment, Attendance, Enrollment, LectureNotice, 
-    Wishlist, LectureRecommendation, LectureApplication
+    Wishlist, LectureRecommendation, LectureApplication,
+    Submission  # 추가
 )
 
 # user 앱의 모델
@@ -25,6 +26,7 @@ from .serializers import (
     EnrollmentSerializer,
     StudentSerializer, 
     LectureNoticeSerializer,
+    SubmissionSerializer,  # 추가
     # 추천 시스템 시리얼라이저
     LectureRecommendationSerializer,
     LectureRecommendationResponseSerializer,
@@ -560,6 +562,109 @@ def lecture_students_api(request, lecture_id):
     
     return Response(students)
 
+
+# ========================================
+# 강사용 API - 과제 제출 관리
+# ========================================
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def assignment_submissions_list_api(request, lecture_id, assignment_id):
+    """
+    특정 과제의 제출 목록 조회 (강사용)
+    """
+    lecture = get_object_or_404(Lecture, pk=lecture_id)
+    assignment = get_object_or_404(Assignment, pk=assignment_id, lecture=lecture)
+    
+    # 강사 권한 체크
+    if request.user != lecture.instructor:
+        return Response(
+            {"detail": "이 강의의 강사만 제출 목록을 볼 수 있습니다."},
+            status=status.HTTP_403_FORBIDDEN,
+        )
+    
+    submissions = Submission.objects.filter(
+        assignment=assignment
+    ).select_related('student').order_by('-submitted_at')
+    
+    serializer = SubmissionSerializer(submissions, many=True)
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def assignment_submit_api(request, lecture_id, assignment_id):
+    """
+    과제 제출 API (학생용)
+    """
+    lecture = get_object_or_404(Lecture, pk=lecture_id)
+    assignment = get_object_or_404(Assignment, pk=assignment_id, lecture=lecture)
+    
+    # 수강 여부 확인
+    if not Enrollment.objects.filter(lecture=lecture, student=request.user).exists():
+        return Response(
+            {"detail": "이 강의를 수강하지 않아 과제를 제출할 수 없습니다."},
+            status=status.HTTP_403_FORBIDDEN,
+        )
+    
+    # 이미 제출했는지 확인
+    existing = Submission.objects.filter(
+        assignment=assignment,
+        student=request.user
+    ).first()
+    
+    if existing:
+        # 기존 제출 수정
+        serializer = SubmissionSerializer(existing, data=request.data, partial=True)
+    else:
+        # 새 제출
+        serializer = SubmissionSerializer(data=request.data)
+    
+    if serializer.is_valid():
+        serializer.save(student=request.user, assignment=assignment)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['PATCH'])
+@permission_classes([IsAuthenticated])
+def assignment_grade_api(request, lecture_id, assignment_id, submission_id):
+    """
+    과제 채점 API (강사용)
+    
+    Request Body:
+    {
+        "grade": 95,
+        "feedback": "잘했습니다!"
+    }
+    """
+    lecture = get_object_or_404(Lecture, pk=lecture_id)
+    assignment = get_object_or_404(Assignment, pk=assignment_id, lecture=lecture)
+    submission = get_object_or_404(Submission, pk=submission_id, assignment=assignment)
+    
+    # 강사 권한 체크
+    if request.user != lecture.instructor:
+        return Response(
+            {"detail": "이 강의의 강사만 채점할 수 있습니다."},
+            status=status.HTTP_403_FORBIDDEN,
+        )
+    
+    grade = request.data.get('grade')
+    feedback = request.data.get('feedback', '')
+    
+    if grade is not None:
+        submission.grade = grade
+        submission.graded_at = timezone.now()  # 채점 시간 기록
+    if feedback:
+        submission.feedback = feedback
+    
+    submission.save()
+    
+    serializer = SubmissionSerializer(submission)
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
+
 # ========================================
 # 강사용 API - 출결 관리
 # ========================================
@@ -722,7 +827,7 @@ def lecture_notices_api(request, lecture_id):
 
 @api_view(['GET', 'PUT', 'DELETE'])
 @permission_classes([IsAuthenticated])
-def lecture_notice_detail_api(request, notice_id):
+def lecture_notice_detail_teacher_api(request, notice_id):
     """강의 공지사항 상세 조회, 수정, 삭제"""
     notice = get_object_or_404(LectureNotice, id=notice_id)
     lecture = notice.lecture
