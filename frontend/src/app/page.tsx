@@ -1,101 +1,55 @@
-import Image from "next/image";
+// src/app/page.tsx
 
-export default function Home() {
+export default function HomePage() {
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="https://nextjs.org/icons/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+    <main className="min-h-[calc(100vh-64px)] bg-[#f5f5f5]">
+      {/* 히어로 영역 */}
+      <section className="relative mx-auto max-w-6xl px-4 pt-10 pb-16">
+        <div className="relative overflow-hidden rounded-xl">
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="https://nextjs.org/icons/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+          {/* home.png 배경 적용 */}
+          <div
+            className="h-[360px] w-full bg-cover bg-center opacity-60"
+            style={{ backgroundImage: "url('/home.png')" }}
+          />
+
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+      </section>
+
+      {/* 하단 카드 섹션 */}
+      <section className="mx-auto mb-16 max-w-6xl px-4">
+        <div className="grid gap-6 md:grid-cols-3">
+          <div className="rounded-lg bg-white p-5 shadow-sm">
+            <h2 className="mb-2 text-sm font-semibold text-gray-800">
+              로봇·AI 융합 교육
+            </h2>
+            <p className="text-xs text-gray-600 leading-relaxed">
+              초·중·고 학생을 위한 단계별 로봇 코딩 커리큘럼으로
+              하드웨어와 소프트웨어를 함께 경험할 수 있습니다.
+            </p>
+          </div>
+
+          <div className="rounded-lg bg-white p-5 shadow-sm">
+            <h2 className="mb-2 text-sm font-semibold text-gray-800">
+              대회·프로젝트 경험
+            </h2>
+            <p className="text-xs text-gray-600 leading-relaxed">
+              실제 로봇 대회와 프로젝트를 통해
+              문제 해결 능력과 팀 협업 능력을 함께 성장시킵니다.
+            </p>
+          </div>
+
+          <div className="rounded-lg bg-white p-5 shadow-sm">
+            <h2 className="mb-2 text-sm font-semibold text-gray-800">
+              진로·진학에 도움이 되는 포트폴리오
+            </h2>
+            <p className="text-xs text-gray-600 leading-relaxed">
+              로봇 제작과 AI 프로젝트 결과물을 바탕으로
+              학생 개개인의 포트폴리오를 만들어 갈 수 있습니다.
+            </p>
+          </div>
+        </div>
+      </section>
+    </main>
   );
 }

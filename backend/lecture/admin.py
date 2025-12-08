@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Lecture, LectureApplication, LectureSchedule, LectureNotice, Wishlist, Attendance, Registration, Enrollment
+from .models import Lecture, LectureApplication, LectureSchedule, LectureNotice, Wishlist, Attendance, Enrollment, Assignment
 
 # Register your models here.
 @admin.register(Lecture)
@@ -26,10 +26,10 @@ class WishlistAdmin(admin.ModelAdmin):
 class AttendanceAdmin(admin.ModelAdmin):
     pass
 
-@admin.register(Registration)
-class RegistrationAdmin(admin.ModelAdmin):
-    pass
-
 @admin.register(Enrollment)
 class EnrollmentAdmin(admin.ModelAdmin):
+    pass
+
+@admin.register(Assignment)
+class AssignmentAdmin(admin.ModelAdmin):
     pass

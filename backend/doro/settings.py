@@ -31,17 +31,25 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
+    # Django 기본 앱
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'user.apps.UserConfig',
-    'community.apps.CommunityConfig',
-    'lecture.apps.LectureConfig',
-    'notice.apps.NoticeConfig',
-    'consultations.apps.ConsultationsConfig',
+    
+    # Third party apps
+    'rest_framework',
+    'rest_framework_simplejwt',
+    'corsheaders',
+    
+    # Local apps - 각각 한 번씩만!
+    'user',
+    'lecture',
+    'notice',
+    'community',
+    'consultations',
 ]
 
 MIDDLEWARE = [
@@ -76,6 +84,7 @@ TEMPLATES = [
 WSGI_APPLICATION = 'doro.wsgi.application'
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
+    "http://127.0.0.1:3000",
 ]
 
 # Database
@@ -83,9 +92,12 @@ CORS_ALLOWED_ORIGINS = [
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        # 데이터베이스 파일 경로를 지정합니다.
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'doro_db',
+        'USER': 'doro_user',
+        'PASSWORD': 'doro1234',
+        'HOST': 'localhost',
+        'PORT': '5432',
     }
 }
 
@@ -139,9 +151,37 @@ LECTURE_SCHEDULE_MODEL = 'lecture.LectureSchedule'
 LECTURE_NOTICE_MODEL = 'lecture.LectureNotice'
 LECTURE_WISHLIST_MODEL = 'lecture.Wishlist'
 LECTURE_ATTENDANCE_MODEL = 'lecture.Attendance'
-LECTURE_REGISTRATION_MODEL = 'lecture.Registration'
+LECTURE_ASSIGNMENT_MODEL = 'lecture.Assignment'
 LECTURE_ENROLLMENT_MODEL = 'lecture.Enrollment'
 
 CONSULTATION_MODEL = 'consultation.Consultation'
 
 SYSTEM_NOTICE_MODEL = 'notice.SystemNotice'
+
+
+# settings.py 맨 아래에 추가
+
+# DRF가 JWT를 인증 수단으로 사용하도록 설정
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    )
+}
+
+from datetime import timedelta
+
+# JWT 설정 (토큰 유효기간 등)
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60), # 1시간 동안 유효
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),    # 1일 동안 유효
+}
+
+
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_CREDENTIALS = True
+
+
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
