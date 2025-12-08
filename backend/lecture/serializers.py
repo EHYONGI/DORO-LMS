@@ -9,7 +9,7 @@ from .models import (
     LectureRecommendation,
     Submission,
 )
-from user.models import User
+from user.models import User    
 
 
 # ========================================

@@ -13,45 +13,6 @@ export default function HomePage() {
             style={{ backgroundImage: "url('/home.png')" }}
           />
 
-          {/* 내용 오버레이 */}
-          <div className="pointer-events-none absolute inset-0 flex flex-col justify-between px-10 py-8 text-white">
-            <div>
-              <p className="mb-2 text-sm font-light">Do with Robot</p>
-              <h1 className="text-3xl font-bold leading-tight">
-                AI 로봇시대 생존교육
-              </h1>
-              <p className="mt-3 text-sm text-gray-200">
-                로봇 대중화 시대가 다가온다! <br />
-                Korea No.1 Robot Edu Do with Robot
-              </p>
-            </div>
-
-            {/* 오른쪽 하단 정보 카드 */}
-            <div className="flex flex-wrap justify-end gap-8 text-xs font-light">
-              <div className="flex flex-col items-start gap-1">
-                <span className="text-[11px] text-gray-300">대회 수상 실적</span>
-                <span className="text-sm font-semibold">
-                  대회 출전·개최 · 수상 경험 다수
-                </span>
-              </div>
-
-              <div className="flex flex-col items-start gap-1">
-                <span className="text-[11px] text-gray-300">누적 교육 시간</span>
-                <span className="text-sm font-semibold">5,206 시간</span>
-              </div>
-
-              <div className="flex flex-col items-start gap-1">
-                <span className="text-[11px] text-gray-300">학생 만족도 조사</span>
-                <span className="text-sm font-semibold">4.7 / 5.0</span>
-              </div>
-
-              <div className="flex flex-col items-start gap-1">
-                <span className="text-[11px] text-gray-300">누적 교육 수강생</span>
-                <span className="text-sm font-semibold">40,350 명</span>
-              </div>
-            </div>
-          </div>
-
         </div>
       </section>
 
