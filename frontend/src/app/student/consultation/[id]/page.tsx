@@ -225,7 +225,7 @@ export default function ConsultationDetailPage() {
 
                         <div className="flex justify-between pt-6 border-t border-gray-200 mt-8">
                             <button
-                                onClick={() => router.push('/consultation')}
+                                onClick={() => router.push('/student/consultation')}
                                 className="px-4 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
                             >
                                 목록으로

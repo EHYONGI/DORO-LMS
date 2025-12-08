@@ -12,16 +12,20 @@ from consultations import views as consultation_views
 urlpatterns = [
     path('admin/', admin.site.urls),
 
+    path('api/community/', include('community.urls')),
+    path('api/lectures/', include('lecture.urls')),
+    path('api/user/', include('user.urls')),
+    path('api/notice/', include('notice.urls')),
+    path('api/consultations/', include('consultations.urls')),
+
     path('api/user/instructors/', consultation_views.instructor_list_api),
     path('api/consult/list/', consultation_views.consultation_list_create_api),     
     path('api/consult/request/', consultation_views.consultation_list_create_api),  
 
-    path('api/dashboard/my-courses/', lecture_views.my_course_list_api),
     path('api/dashboard/notices/', notice_views.dashboard_notice_list_api),
     path('api/dashboard/notices/<int:pk>/', notice_views.notice_detail_api),
+    path('api/dashboard/my-courses/', lecture_views.my_course_list_api),
     path('api/dashboard/tasks/', lecture_views.my_task_list_api),
-
-    path('api/community/', include('community.urls')),
     
     path('api/lecture/<int:lecture_id>/notices/', lecture_views.course_notice_list_api),
     path('api/lecture/notices/<int:notice_id>/', lecture_views.lecture_notice_detail_api),
@@ -37,13 +41,6 @@ urlpatterns = [
     
     path('api/teacher/applications/', lecture_views.teacher_applications_api),
     path('api/teacher/applications/<int:application_id>/', lecture_views.teacher_application_cancel_api),
-
-    path('api/lectures/', include('lecture.urls')),
-    
-    path('api/user/', include('user.urls')),
-    path('api/notice/', include('notice.urls')),
-
-    path('api/consultations/', include('consultations.urls')),
     
     path('api/courses/wishlist', lecture_views.wishlist_list_api),
     path('api/courses/<int:lecture_id>/wishlist', lecture_views.wishlist_add_remove_api),

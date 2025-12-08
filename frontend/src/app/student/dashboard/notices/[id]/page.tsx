@@ -7,7 +7,7 @@ import { useParams, useRouter } from 'next/navigation';
 interface Notice {
     id: number;
     title: string;
-    body: string;
+    content: string;
     created_at: string;
     author_name?: string;
 }
@@ -67,12 +67,12 @@ export default function SystemNoticeDetailPage() {
                 </div>
 
                 <div className="min-h-[300px] text-gray-700 whitespace-pre-wrap leading-relaxed">
-                    {notice.body}
+                    {notice.content}
                 </div>
 
                 <div className="mt-8 pt-6 border-t border-gray-200 text-right">
                     <button
-                        onClick={() => router.push('/dashboard/notices')}
+                        onClick={() => router.push('/student/dashboard')}
                         className="px-4 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 font-medium text-sm transition"
                     >
                         목록으로

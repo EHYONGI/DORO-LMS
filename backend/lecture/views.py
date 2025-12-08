@@ -33,6 +33,11 @@ from .serializers import (
 
 from .services import LectureRecommendationService
 
+def get_user_full_name(user):
+    if not user:
+        return None
+    full_name = f"{user.last_name}{user.first_name}".strip()
+    return full_name if full_name else user.username
 
 # ========================================
 # 학생용 API - 내 강의 관련
@@ -212,9 +217,6 @@ def wishlist_add_remove_api(request, lecture_id):
 def get_lecture_recommendations(request):
     """
     실시간 강의 추천 API
-    - 사용자의 역량 점수를 기반으로 적합한 강의 추천
-    - 이미 수강 중인 강의 제외
-    - 선수과목 요구사항 확인
     """
     user = request.user
     
@@ -225,17 +227,16 @@ def get_lecture_recommendations(request):
             status=status.HTTP_403_FORBIDDEN
         )
     
-    # 실시간 추천 계산
     recommendations = LectureRecommendationService.get_recommendations(user, limit=10)
     
-    # 응답 데이터 생성
     response_data = []
     for rec in recommendations:
         lecture = rec['lecture']
-        
-        # 수강 여부 및 위시리스트 확인
         is_enrolled = Enrollment.objects.filter(student=user, lecture=lecture).exists()
         is_in_wishlist = Wishlist.objects.filter(user=user, lecture=lecture).exists()
+        
+        # instructor_name 수정
+        instructor_name = get_user_full_name(lecture.instructor)
         
         response_data.append({
             'lecture_id': lecture.id,
@@ -246,7 +247,7 @@ def get_lecture_recommendations(request):
             'level': lecture.level,
             'level_display': lecture.get_level_display(),
             'required_score': lecture.required_score,
-            'instructor_name': lecture.instructor.username if lecture.instructor else None,
+            'instructor_name': instructor_name,  # 수정됨
             'match_score': rec['score'],
             'reason': rec['reason'],
             'is_enrolled': is_enrolled,
@@ -658,15 +659,16 @@ def lecture_notices_api(request, lecture_id):
     if request.method == 'GET':
         notices = LectureNotice.objects.filter(lecture=lecture).order_by('-created_at')
         
-        # 응답 데이터 직접 구성
         result = []
         for notice in notices:
+            author_name = get_user_full_name(lecture.instructor) if lecture.instructor else '관리자'
+            
             result.append({
                 'id': notice.id,
                 'title': notice.title,
                 'body': notice.body,
                 'created_at': notice.created_at,
-                'author_name': lecture.instructor.username if lecture.instructor else '관리자',
+                'author_name': author_name,  
                 'lecture': notice.lecture_id
             })
         
@@ -696,12 +698,14 @@ def lecture_notices_api(request, lecture_id):
             body=body
         )
         
+        author_name = get_user_full_name(lecture.instructor)
+        
         return Response({
             'id': notice.id,
             'title': notice.title,
             'body': notice.body,
             'created_at': notice.created_at,
-            'author_name': lecture.instructor.username if lecture.instructor else '관리자',
+            'author_name': author_name,
             'lecture': notice.lecture_id
         }, status=status.HTTP_201_CREATED)
 
@@ -713,13 +717,15 @@ def lecture_notice_detail_api(request, notice_id):
     notice = get_object_or_404(LectureNotice, id=notice_id)
     lecture = notice.lecture
     
+    author_name = get_user_full_name(lecture.instructor) if lecture.instructor else '관리자'
+
     if request.method == 'GET':
         return Response({
             'id': notice.id,
             'title': notice.title,
             'body': notice.body,
             'created_at': notice.created_at,
-            'author_name': lecture.instructor.username if lecture.instructor else '관리자',
+            'author_name': author_name,
             'lecture': notice.lecture_id
         })
     
@@ -746,7 +752,7 @@ def lecture_notice_detail_api(request, notice_id):
             'title': notice.title,
             'body': notice.body,
             'created_at': notice.created_at,
-            'author_name': lecture.instructor.username if lecture.instructor else '관리자',
+            'author_name': author_name,
             'lecture': notice.lecture_id
         })
     

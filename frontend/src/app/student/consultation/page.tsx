@@ -1,4 +1,3 @@
-// app/consultation/page.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -25,7 +24,7 @@ interface Consultation {
 export default function ConsultationPage() {
     const router = useRouter();
     const [activeTab, setActiveTab] = useState<'list' | 'request'>('list');
-    
+
     // 상담 신청 폼 데이터
     const [formData, setFormData] = useState({
         instructor: '',
@@ -39,7 +38,7 @@ export default function ConsultationPage() {
     // 상담 내역 리스트
     const [consultations, setConsultations] = useState<Consultation[]>([]);
     const [instructors, setInstructors] = useState<Instructor[]>([]);
-    
+
     // 필터
     const [filters, setFilters] = useState({
         type: '',
@@ -104,17 +103,16 @@ export default function ConsultationPage() {
         const token = localStorage.getItem('access_token');
 
         try {
-            // ✅ 백엔드에서 기대하는 필드 이름으로 변환해서 보내기
             const payload = {
-                instructor: Number(formData.instructor),      // 문자열 → 숫자 PK
-                method: formData.method,                     // 그대로
-                consultation_type: formData.type,            // type → consultation_type
-                preferred_date: formData.date,               // date → preferred_date
+                instructor: Number(formData.instructor),
+                method: formData.method,
+                consultation_type: formData.type,
+                preferred_date: formData.date,
                 topic: formData.topic,
                 content: formData.content,
             };
 
-            const res = await fetch('http://127.0.0.1:8000/api/consult/request/', {   // ✅ 슬래시도 추가
+            const res = await fetch('http://127.0.0.1:8000/api/consult/request/', {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -141,20 +139,20 @@ export default function ConsultationPage() {
 
     // 헬퍼 함수들
     const getStatusText = (status: string) => {
-        const map: { [key: string]: string } = { 
-            'PENDING': '신청완료', 
-            'APPROVED': '상담예정', 
-            'COMPLETED': '상담완료', 
-            'CANCELED': '취소됨' 
+        const map: { [key: string]: string } = {
+            'PENDING': '신청완료',
+            'APPROVED': '상담예정',
+            'COMPLETED': '상담완료',
+            'CANCELED': '취소됨'
         };
         return map[status] || status;
     };
 
     const getTypeText = (type: string) => {
-        const map: { [key: string]: string } = { 
-            'CAREER': '진로상담', 
-            'CODING': '코딩질문', 
-            'OTHER': '기타' 
+        const map: { [key: string]: string } = {
+            'CAREER': '진로상담',
+            'CODING': '코딩질문',
+            'OTHER': '기타'
         };
         return map[type] || type;
     };
@@ -233,8 +231,8 @@ export default function ConsultationPage() {
                             <option value="CANCELED">취소됨</option>
                         </select>
 
-                        <button 
-                            onClick={() => setActiveTab('request')} 
+                        <button
+                            onClick={() => setActiveTab('request')}
                             className="ml-auto bg-sky-500 text-white px-4 py-2 rounded text-sm font-bold hover:bg-sky-600 shadow-sm"
                         >
                             + 상담신청
@@ -259,19 +257,22 @@ export default function ConsultationPage() {
                                 </thead>
                                 <tbody className="divide-y divide-gray-100">
                                     {filteredConsultations.length > 0 ? filteredConsultations.map(item => (
-                                        <tr key={item.id} className="hover:bg-gray-50">
+                                        <tr
+                                            key={item.id}
+                                            className="hover:bg-gray-50 cursor-pointer transition"
+                                            onClick={() => router.push(`/student/consultation/${item.id}`)}
+                                        >
                                             <td className="py-3 px-4 text-gray-800">{item.instructor_name}</td>
                                             <td className="py-3 px-4 text-gray-600">{item.method === 'OFFLINE' ? '대면' : '비대면'}</td>
                                             <td className="py-3 px-4 text-gray-600">{getTypeText(item.type)}</td>
                                             <td className="py-3 px-4 text-gray-800 font-medium">{item.topic}</td>
                                             <td className="py-3 px-4 text-gray-600">{new Date(item.preferred_date).toLocaleDateString()}</td>
                                             <td className="py-3 px-4">
-                                                <span className={`px-2 py-1 rounded text-xs font-bold ${
-                                                    item.status === 'PENDING' ? 'bg-yellow-100 text-yellow-700' :
+                                                <span className={`px-2 py-1 rounded text-xs font-bold ${item.status === 'PENDING' ? 'bg-yellow-100 text-yellow-700' :
                                                     item.status === 'APPROVED' ? 'bg-blue-100 text-blue-700' :
-                                                    item.status === 'COMPLETED' ? 'bg-green-100 text-green-700' :
-                                                    'bg-gray-100 text-gray-700'
-                                                }`}>
+                                                        item.status === 'COMPLETED' ? 'bg-green-100 text-green-700' :
+                                                            'bg-gray-100 text-gray-700'
+                                                    }`}>
                                                     {getStatusText(item.status)}
                                                 </span>
                                             </td>
@@ -298,10 +299,10 @@ export default function ConsultationPage() {
                                 <span className="text-red-500 mr-1">*</span>상담강사 선택
                             </label>
                             <div className="col-span-3">
-                                <select 
-                                    required 
-                                    value={formData.instructor} 
-                                    onChange={(e) => setFormData({ ...formData, instructor: e.target.value })} 
+                                <select
+                                    required
+                                    value={formData.instructor}
+                                    onChange={(e) => setFormData({ ...formData, instructor: e.target.value })}
                                     className="w-full border border-gray-300 p-2 rounded focus:border-sky-500 outline-none"
                                 >
                                     <option value="">상담강사를 선택하세요</option>
@@ -320,24 +321,24 @@ export default function ConsultationPage() {
                             </label>
                             <div className="col-span-3 flex gap-4">
                                 <label className="flex items-center gap-2 cursor-pointer">
-                                    <input 
-                                        type="radio" 
-                                        name="method" 
-                                        value="OFFLINE" 
-                                        checked={formData.method === 'OFFLINE'} 
-                                        onChange={(e) => setFormData({ ...formData, method: e.target.value })} 
-                                        required 
+                                    <input
+                                        type="radio"
+                                        name="method"
+                                        value="OFFLINE"
+                                        checked={formData.method === 'OFFLINE'}
+                                        onChange={(e) => setFormData({ ...formData, method: e.target.value })}
+                                        required
                                     />
                                     <span className="text-sm text-gray-700">대면상담</span>
                                 </label>
                                 <label className="flex items-center gap-2 cursor-pointer">
-                                    <input 
-                                        type="radio" 
-                                        name="method" 
-                                        value="ONLINE" 
-                                        checked={formData.method === 'ONLINE'} 
-                                        onChange={(e) => setFormData({ ...formData, method: e.target.value })} 
-                                        required 
+                                    <input
+                                        type="radio"
+                                        name="method"
+                                        value="ONLINE"
+                                        checked={formData.method === 'ONLINE'}
+                                        onChange={(e) => setFormData({ ...formData, method: e.target.value })}
+                                        required
                                     />
                                     <span className="text-sm text-gray-700">비대면상담</span>
                                 </label>
@@ -349,11 +350,11 @@ export default function ConsultationPage() {
                                 <span className="text-red-500 mr-1">*</span>희망 상담 일자
                             </label>
                             <div className="col-span-3">
-                                <input 
-                                    type="date" 
-                                    required 
-                                    value={formData.date} 
-                                    onChange={(e) => setFormData({ ...formData, date: e.target.value })} 
+                                <input
+                                    type="date"
+                                    required
+                                    value={formData.date}
+                                    onChange={(e) => setFormData({ ...formData, date: e.target.value })}
                                     className="border border-gray-300 p-2 rounded focus:border-sky-500 outline-none"
                                 />
                             </div>
@@ -364,10 +365,10 @@ export default function ConsultationPage() {
                                 <span className="text-red-500 mr-1">*</span>상담 유형
                             </label>
                             <div className="col-span-3">
-                                <select 
-                                    required 
-                                    value={formData.type} 
-                                    onChange={(e) => setFormData({ ...formData, type: e.target.value })} 
+                                <select
+                                    required
+                                    value={formData.type}
+                                    onChange={(e) => setFormData({ ...formData, type: e.target.value })}
                                     className="w-full border border-gray-300 p-2 rounded focus:border-sky-500 outline-none"
                                 >
                                     <option value="">상담 유형을 선택하세요</option>
@@ -383,12 +384,12 @@ export default function ConsultationPage() {
                                 <span className="text-red-500 mr-1">*</span>상담 주제
                             </label>
                             <div className="col-span-3">
-                                <input 
-                                    type="text" 
-                                    required 
-                                    value={formData.topic} 
-                                    onChange={(e) => setFormData({ ...formData, topic: e.target.value })} 
-                                    placeholder="상담 주제를 입력하세요" 
+                                <input
+                                    type="text"
+                                    required
+                                    value={formData.topic}
+                                    onChange={(e) => setFormData({ ...formData, topic: e.target.value })}
+                                    placeholder="상담 주제를 입력하세요"
                                     className="w-full border border-gray-300 p-2 rounded focus:border-sky-500 outline-none"
                                 />
                             </div>
@@ -399,27 +400,27 @@ export default function ConsultationPage() {
                                 <span className="text-red-500 mr-1">*</span>상담 내용
                             </label>
                             <div className="col-span-3">
-                                <textarea 
-                                    required 
-                                    value={formData.content} 
-                                    onChange={(e) => setFormData({ ...formData, content: e.target.value })} 
-                                    rows={5} 
-                                    placeholder="상담 내용을 입력하세요" 
+                                <textarea
+                                    required
+                                    value={formData.content}
+                                    onChange={(e) => setFormData({ ...formData, content: e.target.value })}
+                                    rows={5}
+                                    placeholder="상담 내용을 입력하세요"
                                     className="w-full border border-gray-300 p-2 rounded focus:border-sky-500 outline-none resize-none"
                                 />
                             </div>
                         </div>
 
                         <div className="flex justify-center gap-3 pt-4">
-                            <button 
-                                type="button" 
-                                onClick={() => setActiveTab('list')} 
+                            <button
+                                type="button"
+                                onClick={() => setActiveTab('list')}
                                 className="px-6 py-2 bg-gray-200 text-gray-700 rounded font-medium hover:bg-gray-300 transition"
                             >
                                 취소
                             </button>
-                            <button 
-                                type="submit" 
+                            <button
+                                type="submit"
                                 className="px-6 py-2 bg-sky-600 text-white rounded font-bold hover:bg-sky-700 transition shadow-sm"
                             >
                                 신청하기

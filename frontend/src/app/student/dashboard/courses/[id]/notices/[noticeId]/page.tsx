@@ -6,7 +6,7 @@ import { useParams, useRouter } from 'next/navigation';
 interface Notice {
     id: number;
     title: string;
-    content: string;
+    body: string;
     created_at: string;
     author_name: string;
 }
@@ -56,7 +56,7 @@ export default function CourseNoticeDetailPage() {
             </div>
 
             <div className="min-h-[300px] text-gray-700 whitespace-pre-wrap leading-relaxed">
-                {notice.content}
+                {notice.body}
             </div>
 
             <div className="mt-8 pt-6 border-t border-gray-200 text-right">

@@ -48,10 +48,10 @@ export default function AllNoticesPage() {
     const handleNoticeClick = (notice: Notice) => {
         if (notice.type === 'lecture' && notice.lecture) {
             // 강의 공지 -> 해당 강의의 공지 상세 페이지로 이동
-            router.push(`/dashboard/courses/${notice.lecture}/notices/${notice.id}`);
+            router.push(`/student/dashboard/courses/${notice.lecture}/notices/${notice.id}`);
         } else {
             // 시스템 공지 -> 시스템 공지 상세 페이지로 이동
-            router.push(`/dashboard/notices/${notice.id}`);
+            router.push(`/student/dashboard/notices/${notice.id}`);
         }
     };
 
@@ -94,7 +94,7 @@ export default function AllNoticesPage() {
                                         <td className="py-4 text-center">
                                             <span className={`text-xs font-bold px-2 py-1 rounded ${notice.type === 'system' ? 'bg-red-100 text-red-600' : 'bg-sky-100 text-sky-600'
                                                 }`}>
-                                                {notice.category === '전체 공지' ? '전체' : '강의'}
+                                                {notice.type === 'system' ? '전체' : '강의'}
                                             </span>
                                         </td>
                                         <td className="py-4 pl-4 text-left font-medium text-gray-800 hover:text-sky-600">

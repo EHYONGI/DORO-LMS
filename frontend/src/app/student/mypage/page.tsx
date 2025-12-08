@@ -60,11 +60,11 @@ export default function MyPage() {
 
             try {
                 console.log('Fetching user data...');
-                
+
                 // 1. 내 정보 가져오기
                 const userRes = await fetch('http://127.0.0.1:8000/api/user/me/', { headers });
                 console.log('User response status:', userRes.status);
-                
+
                 if (userRes.ok) {
                     const userData = await userRes.json();
                     console.log('User data:', userData);
@@ -79,7 +79,7 @@ export default function MyPage() {
                 // 2. 수강 내역 가져오기
                 const courseRes = await fetch('http://127.0.0.1:8000/api/dashboard/my-courses/', { headers });
                 console.log('Course response status:', courseRes.status);
-                
+
                 if (courseRes.ok) {
                     const courseData = await courseRes.json();
                     console.log('Course data:', courseData);
@@ -91,7 +91,7 @@ export default function MyPage() {
                 // 3. 활동 내역 가져오기
                 const activityRes = await fetch('http://127.0.0.1:8000/api/community/me/', { headers });
                 console.log('Activity response status:', activityRes.status);
-                
+
                 if (activityRes.ok) {
                     const activityData = await activityRes.json();
                     console.log('Activity data:', activityData);
@@ -157,8 +157,8 @@ export default function MyPage() {
             <div className="flex items-center justify-center min-h-screen">
                 <div className="text-center max-w-md">
                     <p className="text-red-500 mb-4">{error}</p>
-                    <button 
-                        onClick={() => router.push('/dashboard')} 
+                    <button
+                        onClick={() => router.push('/dashboard')}
                         className="px-4 py-2 bg-sky-600 text-white rounded hover:bg-sky-700"
                     >
                         대시보드로 돌아가기
@@ -175,14 +175,14 @@ export default function MyPage() {
                 <div className="text-center max-w-md">
                     <p className="text-red-500 mb-4">프로필 정보를 불러올 수 없습니다.</p>
                     <div className="flex gap-2 justify-center">
-                        <button 
-                            onClick={() => window.location.reload()} 
+                        <button
+                            onClick={() => window.location.reload()}
                             className="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
                         >
                             다시 시도
                         </button>
-                        <button 
-                            onClick={() => router.push('/dashboard')} 
+                        <button
+                            onClick={() => router.push('/dashboard')}
                             className="px-4 py-2 bg-sky-600 text-white rounded hover:bg-sky-700"
                         >
                             대시보드로 이동
@@ -337,7 +337,8 @@ export default function MyPage() {
                             {activity.threads.length > 0 ? (
                                 <ul className="border-t border-gray-200">
                                     {activity.threads.map(thread => (
-                                        <li key={thread.id} className="flex justify-between py-3 border-b border-gray-100 hover:bg-gray-50 px-2 cursor-pointer" onClick={() => router.push(`/dashboard/community/${thread.id}`)}>
+                                        // <li key={thread.id} className="flex justify-between py-3 border-b border-gray-100 hover:bg-gray-50 px-2 cursor-pointer" onClick={() => router.push(`/student/dashboard/community/${thread.id}`)}>
+                                        <li key={thread.id} className="flex justify-between py-3 border-b border-gray-100 hover:bg-gray-50 px-2 cursor-pointer">
                                             <span className="text-gray-700 text-sm truncate max-w-md">{thread.title}</span>
                                             <span className="text-xs text-gray-400">{new Date(thread.created_at).toLocaleDateString()}</span>
                                         </li>
@@ -375,7 +376,7 @@ export default function MyPage() {
                             </h3>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 {enrollments.filter(e => e.lecture.status !== 'CLOSED').map(item => (
-                                    <div key={item.lecture.id} onClick={() => router.push(`/dashboard/courses/${item.lecture.id}/management`)} className="border border-gray-200 rounded-xl p-5 hover:shadow-md transition cursor-pointer bg-white group">
+                                    <div key={item.lecture.id} onClick={() => router.push(`/student/dashboard/courses/${item.lecture.id}/management`)} className="border border-gray-200 rounded-xl p-5 hover:shadow-md transition cursor-pointer bg-white group">
                                         <div className="flex justify-between items-start mb-2">
                                             <span className="bg-sky-100 text-sky-600 text-xs font-bold px-2 py-1 rounded">수강중</span>
                                             <span className="text-xs text-gray-400">{new Date(item.joined_at).toLocaleDateString()} 신청</span>
